@@ -6,7 +6,7 @@ from datetime import date
 
 #########################################################################################################################################
 
-def generate_printer_report_in_html(printers_dataframe, pie_chart_image, bar_chart_image):
+def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_chart_image, bar_chart_image):
 
     """
     PURPOSE:
@@ -15,6 +15,8 @@ def generate_printer_report_in_html(printers_dataframe, pie_chart_image, bar_cha
 
     
     ARGUMENTS:
+
+    excel_sheet_name = the name of the exercise / location of the printer fleet.
 
     printers_dataframe = the name of the DataFrame containing all the printer information. It should be a string.
 
@@ -159,9 +161,9 @@ def generate_printer_report_in_html(printers_dataframe, pie_chart_image, bar_cha
     </head>
     <body>
 
-        <h1>Printer Status Report - {current_date}</h1>
+        <h1>{excel_sheet_name} Printer Status Report -- {current_date}</h1>
         <p>
-            Weekly report of the MCE Printer Fleet status, detailing both the overall distribution and a breakdown by device base code.
+            Weekly report of the Printer Fleet status, detailing both the overall distribution and a breakdown by device base code.
         </p>
 
         <!-- REVISED: The container holding both images -->
@@ -202,4 +204,4 @@ def generate_printer_report_in_html(printers_dataframe, pie_chart_image, bar_cha
     with open(file_name, 'w') as f:
         f.write(html_content)
 
-    print(f"Report successfully generated and saved as '{file_name}'")
+    print(f"\nReport successfully generated and saved as '{file_name}'")

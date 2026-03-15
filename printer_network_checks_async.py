@@ -12,85 +12,104 @@ import re
 
 #########################################################################################################################################
 
-async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> str:
+async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[str, str]:
     """
-    (Internal Worker) Asynchronously pings a single IP under the control of a semaphore.
+    (Internal async worker) Pings a single IP address under semaphore control.
+    It returns a tuple containing the IP address and its final status to ensure
+    results can be correctly mapped later, regardless of completion order.
     """
-    # Use an 'async with' block to safely acquire the semaphore.
-    # The code inside this block will only run when a "slot" is available.
-    # The semaphore is automatically released when the block is exited.
+    # This 'async with' block ensures that no more than the semaphore's limit
+    # of tasks can run this code block at the same time.
     async with semaphore:
-        # Determine the correct command-line parameter for the ping command based on the OS.
+        # This logic is preserved from your original script.
         param = '-n' if platform.system().lower() == 'windows' else '-c'
-        # Construct the full ping command as a list of arguments.
         command = ['ping', param, '4', ip_address]
 
-        # Asynchronously create and start a new subprocess to run the ping command.
+        # Creates an asynchronous subprocess to run the ping command.
         process = await asyncio.create_subprocess_exec(
             *command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        # Asynchronously wait for the subprocess to complete and read all of its output.
+        # Reads the output from the completed process.
         stdout_bytes, _ = await process.communicate()
-        # Decode the captured output from a 'bytes' object into a regular 'string'.
         ping_output = stdout_bytes.decode(errors='ignore')
         
-        # Set a default status of "Offline".
+        # This logic is preserved from your original script.
         status = "Offline"
-
-        # Use a regular expression to search the ping output for the packet loss percentage.
         match = re.search(r"\((\d+)% loss\)", ping_output)
-        
-        # Check if the regular expression found a match in the output text.
         if match:
             loss_percentage = int(match.group(1))
             if loss_percentage < 100:
                 status = "Online"
-        # As a fallback, check for other signs of a successful ping.
         elif "TTL=" in ping_output or "time=" in ping_output:
             status = "Online"
-            
-        # Return the final determined status for this single IP address.
-        return status
+        
+        # This return value is crucial for the dictionary mapping solution.
+        return (ip_address, status)
 
 async def ping_printers_async(printers_dataframe, status_column_name_str, hostname_column_name_str, ip_address_column_name_str):
     """
-    Asynchronously pings all printers, safely limiting the number of concurrent pings
-    using a semaphore.
+    PURPOSE:
+
+    This function runs the PING command for every printer's IP address, and based
+    on the output it determines if the printer is online or offline. This version
+    runs the pings concurrently for high speed, while preserving the original
+    progress counter logic.
+    
+
+    ARGUMENTS:
+
+    printers_dataframe = the name of the DataFrame containing all the printer information.
+
+    status_column_name_str = the name of the column with the status values.
+
+    hostname_column_name_str = the name of the column with the hostname values.
+    ip_address_column_name_str = the name of the column with the IP addresses.
+
+    
+    RETURN VALUE:
+
+    This function returns a dictionary mapping each IP Address to its final 'Online'
+    or 'Offline' status. It also prints a counter indicating the progress, exactly
+    like the original function.
     """
-    # Define the maximum number of concurrent ping tasks. 50 is a safe starting point.
-    CONCURRENT_LIMIT = 50
-    # Create the semaphore "bouncer" with the specified limit.
+    # --- This section is for the concurrency limit ---
+    CONCURRENT_LIMIT = 50 # Sets a safe limit on how many pings run at once.
     semaphore = asyncio.Semaphore(CONCURRENT_LIMIT)
 
-    # Get the list of IP addresses from the DataFrame.
     ip_list = printers_dataframe[ip_address_column_name_str].tolist()
-    total_ips = len(ip_list)
-    completed_count = 0
+    
+    # --- This section is for the progress counter (PRESERVED FROM YOUR ORIGINAL) ---
+    ip_address_count = printers_dataframe[ip_address_column_name_str].count()
+    counter = 0
 
     def update_progress():
-        """Nested helper function to calculate and display progress."""
-        nonlocal completed_count
-        completed_count += 1
-        progress_percentage = int((completed_count / total_ips) * 100)
-        print(f"\rCurrent progress: {progress_percentage}% ({completed_count}/{total_ips})", end="")
+        """This nested function contains your original progress counter logic."""
+        nonlocal counter
+        counter = counter + 1
+        progress_percentage = int((counter / ip_address_count) * 100)
+        print(f"\rCurrent progress: {progress_percentage}%", end="")
 
-    print(f"Starting to ping {total_ips} devices with a concurrency limit of {CONCURRENT_LIMIT}...")
+    print(f"\nStarting to ping {ip_address_count} devices with a concurrency limit of {CONCURRENT_LIMIT}...")
     
-    # Create a list of tasks, passing the semaphore to each worker.
+    # Prepares all the asynchronous tasks to be run.
     tasks = [_ping_worker(ip, semaphore) for ip in ip_list]
     
-    results = []
-    # Use asyncio.as_completed to get results as they finish.
+    # This dictionary will store the results safely, using the IP as a key.
+    status_results_dict = {}
+    
+    # asyncio.as_completed yields tasks as they finish, which is perfect for a live progress bar.
     for task in asyncio.as_completed(tasks):
-        result = await task
-        results.append(result)
-        # Update the on-screen counter as each task completes.
+        # The result is a tuple, e.g., ('192.168.1.10', 'Online')
+        ip, status = await task
+        # The result is stored in the dictionary, ensuring no data is scrambled.
+        status_results_dict[ip] = status
+        # This calls your original counter logic as each task completes.
         update_progress()
 
-    print("\nAll ping checks are complete.")
+    print("\nAll ping checks are complete.\n")
     
-    # Update the DataFrame with the collected results.
-    printers_dataframe[status_column_name_str] = results
+    # This dictionary is returned to the main script so it can safely map the results.
+    return status_results_dict

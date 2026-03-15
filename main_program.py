@@ -5,14 +5,6 @@
 # Import the module that contains fucntions to read, open and write the EXCEL Table with the printer Fleet
 import printers_data_ops
 
-# Stands for "regular expression"; used for advanced string searching and manipulation. Thanks to this module we can extract easily chunks of strings 
-# and place them on a separate column as column values (for example, the Base Code column)
-import re
-
-# A powerful library for data manipulation and analysis, primarily using DataFrames. We will use it to analyse and operate with the printer's data that
-# has been imported from the dictionary.
-import pandas as pd
-
 # The module with the code to generate a printer report in HTML
 import printer_report_craft
 
@@ -20,7 +12,7 @@ import printer_report_craft
 import printer_plots
 
 # This module provides the network operations to check the status of the printers
-import printer_network_checks_async
+import printer_network_checks_async # type: ignore
 
 # This module allows us to run asynchronous tasks
 import asyncio
@@ -48,10 +40,10 @@ async def main():
 
     # ***CHECK ONLINE AND OFFLINE PRINTERS***
     # We will check which printers are online and which are offline. We will use pandas add a Online or Offline value to the Status column for each one.
-    await printer_network_checks_async.ping_printers_async(all_printers_df, "Status", "Hostname", "IP Address")
+    status_dict = await printer_network_checks_async.ping_printers_async(all_printers_df, "Status", "Hostname", "IP Address")
 
-    # We can also check how the DataFrame looks like now, with the Status column added...
-    all_printers_df.head(2)
+    # This line uses the returned dictionary to safely map the statuses to the correct rows.
+    all_printers_df['Status'] = all_printers_df['IP Address'].map(status_dict)
 
     # Lets add the Status column to the original EXCEL Table file, so the users can also see each printer state on the tracker.
     printers_data_ops.update_excel_table_status(excel_sheet_name, all_printers_df)
@@ -89,7 +81,7 @@ async def main():
 
 
     # ***GENERATE A PRINTER STATUS REPORT***
-    printer_report_craft.generate_printer_report_in_html(all_printers_df, pie_chart_file_name, bar_chart_file_name)
+    printer_report_craft.generate_printer_report_in_html(excel_sheet_name, all_printers_df, pie_chart_file_name, bar_chart_file_name)
 
 # ADD these lines at the very end of your file:
 if __name__ == "__main__":

@@ -88,7 +88,7 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
     # Close the plot
     plt.close(fig)
 
-    print(f"Bar chart with labels successfully saved as '{bar_chart_file_name}'")
+    print(f"\nBar chart with labels successfully saved as '{bar_chart_file_name}'")
     return bar_chart_file_name
 
 #########################################################################################################################################
@@ -161,5 +161,5 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
     # 6. Close the plot
     plt.close(fig)
 
-    print(f"Pie chart successfully saved as '{pie_chart_file_name}'")
+    print(f"\nPie chart successfully saved as '{pie_chart_file_name}'")
     return pie_chart_file_name
