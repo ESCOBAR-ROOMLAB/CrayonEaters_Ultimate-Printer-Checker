@@ -7,4 +7,4 @@ OBJECTIVES
 
 - Count per base of Online/Offline printers, with "Bar Chart"
 
-- Auto-generate ans HTML report with the charts, textual status per printer and the Special Notes for the Offline printers
+- Auto-generate an HTML report with the charts, textual status per printer and the Special Notes for the Offline printers

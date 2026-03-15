@@ -84,7 +84,7 @@ def generate_printer_report_in_html(printers_dataframe, pie_chart_image, bar_cha
         html_special_notes_content = "<br><br>".join(all_groups_html)
 
     else:
-        html_special_notes_content = "No special notes for any offline printers this week." 
+        html_special_notes_content = "No special notes for any printers this week." 
 
     # Now we can define the report and its generation as an HTML file.
     # --- Define the NEW HTML structure for the report ---
@@ -186,7 +186,7 @@ def generate_printer_report_in_html(printers_dataframe, pie_chart_image, bar_cha
         </div>
 
 
-        <h3 class="notes-title">Offline Printers Special Notes</h3>
+        <h3 class="notes-title">Printers Special Notes</h3>
     
         <p>
             <!-- Special notes regarding offline printers will be detailed here. -->
