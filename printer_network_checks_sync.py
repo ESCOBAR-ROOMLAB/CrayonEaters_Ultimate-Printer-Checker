@@ -1,3 +1,5 @@
+# printer_network_checks_sync.py
+
 # Used to run external commands and shell processes from within Python. We will use it in our script to ping each printer's IP address.
 import subprocess
 
