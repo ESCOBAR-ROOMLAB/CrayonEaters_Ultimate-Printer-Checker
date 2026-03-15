@@ -1,0 +1,20 @@
+# .gitignore
+
+# --- Generated Reports & Plots ---
+# These files are created by the script and should not be version-controlled.
+Weekly_Printer_Report.html
+printer_status_by_base_code_bar-chart.png
+printer_status_pie-chart.png
+
+
+# --- Python Cache ---
+# Ignore Python's cache directory
+__pycache__/
+
+
+# --- PyInstaller Files ---
+# Ignore the directories and files created during the .exe build process
+/dist/
+/build/
+*.spec
+
