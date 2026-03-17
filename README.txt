@@ -1,6 +1,6 @@
-=========================================
+=============================================
 === Printer Fleet Status & Reporting Tool ===
-=========================================
+=============================================
 
 Version: 1.0
 
@@ -15,12 +15,13 @@ The core workflow is as follows:
 2.  Performs a high-speed, concurrent network ping of every IP address to get a live status ('Online' or 'Offline').
 3.  Updates the original Excel file with this status information while preserving all existing cell formatting, colors, and rules.
 4.  Generates two plots: a pie chart showing the overall status ratio and a bar chart breaking down the status by location code.
-5.  Creates a final, self-contained 'Weekly_Printer_Report.html' file that embeds the data and charts for easy distribution and viewing in any web browser.
+5.  Creates a final, self-contained 'Printer_Report.html' file that embeds the data and charts for easy distribution and viewing in any web browser.
+6.  Opens automatically both the EXCEL document 'Printer_Fleet_Table.xlsx' and the HTML Report 'Printer_Report.html'.
 
 
--------------------
+----------------------
 2. HOW TO USE THE TOOL
--------------------
+----------------------
 
 Follow these steps to run the tool and generate a report.
 
@@ -57,14 +58,14 @@ After the script finishes, the following files will be created or updated in the
 -   Printer_Fleet_Table.xlsx: The original file, now updated with a "Status" column containing the live ping results.
 -   printer_status_pie-chart.png: A pie chart image showing the overall percentage of online vs. offline devices.
 -   printer_status_by_base_code_bar-chart.png: A bar chart image comparing online/offline counts for each location code.
--   Weekly_Printer_Report.html: The final, viewable report containing all the information. Double-click this file to open it in your web browser.
+-   Printer_Report.html: The final, viewable report containing all the information. Double-click this file to open it in your web browser.
 
 
------------------------
+---------------------------
 3. IMPORTANT THINGS TO KNOW
------------------------
+---------------------------
 
--   CRITICAL: CLOSE THE EXCEL FILE!
+-   CRITICAL: CLOSE THE EXCEL FILE!*
     The most common error you will encounter is a 'Permission Denied' error. This happens if 'Printer_Fleet_Table.xlsx' is open in Excel when you run the script. YOU MUST CLOSE THE FILE BEFORE RUNNING THE PROGRAM. The script includes a warning to remind you of this.
 
 -   HOW THE NETWORK CHECK WORKS
@@ -75,4 +76,7 @@ After the script finishes, the following files will be created or updated in the
 
 -   FILE DEPENDENCIES
     The main program relies on the other Python (.py) files to function. Do not rename or move them unless you update the 'import' statements in 'main_program.py'.
+
+
+* Even though the script is written with the code to automatically close the file if open at the beginning, it is still recommended for the user to close it manually, saving the work safely and avoiding issues. The script is not always able to detect if the file is open or not.
 
