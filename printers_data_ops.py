@@ -1,9 +1,18 @@
 # Used to create the DataFrame to store the printer fleet information
-import pandas as pd
+import pandas as pd # type: ignore
 
 # Use openpyxl to load the existing Printer_Fleet_Table.xlsx into memory, keeping all your colors and rules.
-from openpyxl import load_workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import load_workbook # type: ignore
+from openpyxl.utils.dataframe import dataframe_to_rows # type: ignore
+
+# Library for interacting with system processes
+import psutil # type: ignore
+
+# Used to get the filename from a full path
+import os
+
+# Provides a way to open files in a web browser.
+import webbrowser 
 
 #########################################################################################################################################
 
@@ -76,7 +85,8 @@ def update_excel_table_status(excel_sheet_name, all_printers_df):
     """
 
     # Assuming 'printers_df' is your DataFrame with the new 'Status' column
-    print("\nOpening Excel file to update it while preserving formatting...")
+    print("\n===================================================================")
+    print("Opening Excel file to update it while preserving formatting...")
 
     try:
         # Load the existing workbook with openpyxl
@@ -112,3 +122,107 @@ def update_excel_table_status(excel_sheet_name, all_printers_df):
         if workbook:
             workbook.close()
             print("Workbook closed successfully.")
+            print("===================================================================")
+
+def close_excel_file_if_open(file_path):
+
+    """
+    PURPOSE:
+
+    This function robustly checks all running system processes to see if the
+    specified Excel file is currently open in any instance of Microsoft Excel.
+    If it finds the file open, it forcefully terminates that specific Excel
+    process to prevent file access errors ('Permission Denied') later in the
+    script. This action is automated and requires no user input.
+
+    ARGUMENTS:
+
+    file_path = The file path of the Excel workbook to check for. It should be
+                a string (e.g., 'Printer_Fleet_Table.xlsx').
+
+    RETURN VALUE:
+
+    This function does not return any value. Its primary effect is terminating
+    a process if necessary. It also prints messages to the console indicating
+    whether the file was found open and if a process was closed.
+
+    """
+
+    file_name_to_check = os.path.basename(file_path)
+    process_found_and_killed = False
+    
+    print("===================================================================")
+    print(f"Checking if '{file_name_to_check}' is open...")
+
+    # Iterate over all currently running processes on the system
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            # We only care about processes that are Microsoft Excel
+            if 'excel' in proc.info['name'].lower():
+                # For each Excel process, check the files it has open
+                for file_handle in proc.open_files():
+                    # Check if the base name of the open file matches our target file
+                    if file_name_to_check in os.path.basename(file_handle.path):
+                        print(f"  -> Found '{file_name_to_check}' open in process '{proc.info['name']}' (PID: {proc.pid}).")
+                        print("  -> Attempting to close the process to prevent errors...")
+                        
+                        proc.kill()  # Forcefully terminate the process
+                        proc.wait()  # Wait for the process to fully close
+                        
+                        print("  -> Process closed successfully.")
+                        print("===================================================================")
+                        process_found_and_killed = True
+                        break # Exit the inner loop (no need to check other files for this process)
+            
+            if process_found_and_killed:
+                break # Exit the outer loop (no need to check other processes)
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            # These exceptions happen if a process terminates while we are checking it. It's safe to ignore.
+            continue
+            
+    if not process_found_and_killed:
+        print("  -> File is not currently open. Proceeding.")
+        print("===================================================================")
+
+def open_output_files(excel_file_path, report_file_path):
+    """
+    PURPOSE:
+
+    This function automatically opens the two final output files for immediate
+    user review. It opens the generated HTML report in the default web browser
+    and the updated Excel workbook in its default application (e.g., Microsoft
+    Excel). It is designed to work on the Windows operating system.
+
+    ARGUMENTS:
+
+    excel_file_path  = The file path of the Excel workbook that was updated.
+                       It should be a string.
+    report_file_path = The file path of the HTML report that was generated.
+                       It should be a string.
+
+    RETURN VALUE:
+
+    This function does not return any value. Its primary effect is launching
+    external applications to open the specified files. It also prints messages
+    to the console indicating its actions or any errors encountered.
+
+    """
+    print("\nOpening the generated HTML report and the updated Excel file...")
+    
+    try:
+        # Get the full, absolute path to the files for reliability.
+        report_path_abs = os.path.abspath(report_file_path)
+        excel_path_abs = os.path.abspath(excel_file_path)
+
+        # Open the HTML report in a new tab in the default web browser.
+        webbrowser.open_new_tab('file://' + report_path_abs)
+        
+        # Open the Excel file using the default application.
+        # os.startfile() is a Windows-specific command.
+        os.startfile(excel_path_abs)
+        
+    except FileNotFoundError as e:
+        print(f"  -> Error: Could not open a file because it was not found: {e.filename}")
+    except Exception as e:
+        print(f"  -> An unexpected error occurred while trying to open the files: {e}")

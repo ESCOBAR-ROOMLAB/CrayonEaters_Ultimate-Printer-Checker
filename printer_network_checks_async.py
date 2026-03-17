@@ -49,7 +49,7 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
         # This return value is crucial for the dictionary mapping solution.
         return (ip_address, status)
 
-async def ping_printers_async(printers_dataframe, status_column_name_str, hostname_column_name_str, ip_address_column_name_str):
+async def ping_printers_async(printers_dataframe, ip_address_column_name_str):
     """
     PURPOSE:
 
@@ -66,6 +66,7 @@ async def ping_printers_async(printers_dataframe, status_column_name_str, hostna
     status_column_name_str = the name of the column with the status values.
 
     hostname_column_name_str = the name of the column with the hostname values.
+
     ip_address_column_name_str = the name of the column with the IP addresses.
 
     
@@ -92,7 +93,8 @@ async def ping_printers_async(printers_dataframe, status_column_name_str, hostna
         progress_percentage = int((counter / ip_address_count) * 100)
         print(f"\rCurrent progress: {progress_percentage}%", end="")
 
-    print(f"\nStarting to ping {ip_address_count} devices with a concurrency limit of {CONCURRENT_LIMIT}...")
+    print("\n===================================================================")
+    print(f"Starting to ping {ip_address_count} devices with a concurrency limit of {CONCURRENT_LIMIT}...")
     
     # Prepares all the asynchronous tasks to be run.
     tasks = [_ping_worker(ip, semaphore) for ip in ip_list]
@@ -109,7 +111,8 @@ async def ping_printers_async(printers_dataframe, status_column_name_str, hostna
         # This calls your original counter logic as each task completes.
         update_progress()
 
-    print("\nAll ping checks are complete.\n")
+    print("\nAll ping checks are complete.")
+    print("===================================================================")
     
     # This dictionary is returned to the main script so it can safely map the results.
     return status_results_dict

@@ -52,8 +52,8 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
 
    
     # First, lets define some of the text we will include in the report. In this case, we want to specify the reason why the printers 
-    # whose status is Offline and have a Special Note are not reachable in the network. Any unreachable printers should have a Special 
-    # Note inputted on the 'printers_data' dictionary.
+    # whose status is Offline and have a Special Note are not reachable in the network. Some printers may have a Special  Note inputted 
+    # on the 'printers_data' dictionary. Also, we want to include a section listing the Offline printers by site / base.
 
     # --- Filter for rows that have a special note ---
     printers_with_notes = printers_dataframe[printers_dataframe['Special Notes'].notna()].copy()
@@ -88,6 +88,36 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     else:
         html_special_notes_content = "No special notes for any printers this week." 
 
+    # --- Build the HTML for the Offline Printers section ---
+    offline_printers_html = ""
+    offline_printers_df = printers_dataframe[printers_dataframe['Status'] == 'Offline']
+
+    if not offline_printers_df.empty:
+        # Start the main container for the entire section
+        offline_printers_html = '<div class="offline-section">'
+        offline_printers_html += '<h3>Offline Printers by Site</h3>'
+        
+        # Start the flexbox grid container
+        offline_printers_html += '<div class="offline-grid-container">'
+
+        grouped_by_site = offline_printers_df.groupby('Base Code')
+        
+        # Loop through each site and create a column for it
+        for site_code, group_df in grouped_by_site:
+            # Each site's list is now a column in the grid
+            offline_printers_html += '<div class="offline-grid-column">'
+            offline_printers_html += f"<b>{site_code}</b>"
+            offline_printers_html += "<ul>"
+            for hostname in group_df['Hostname']:
+                offline_printers_html += f"<li>{hostname}</li>"
+            offline_printers_html += "</ul>"
+            offline_printers_html += '</div>' # Close the column div
+            
+        # Close the grid container div
+        offline_printers_html += '</div>'
+        # Close the main section div
+        offline_printers_html += '</div>'
+
     # Now we can define the report and its generation as an HTML file.
     # --- Define the NEW HTML structure for the report ---
     html_content = f"""
@@ -111,7 +141,7 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
                 line-height: 1.6;
             }}
 
-            /* --- NEW: Image Container for side-by-side layout --- */
+            /* --- Image Container for side-by-side layout --- */
             .image-container {{
                 display: flex; /* Use flexbox to align items horizontally */
                 justify-content: space-around; /* Distribute space around items */
@@ -124,7 +154,7 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
                 border-radius: 8px; /* Rounded corners */
             }}
 
-            /* --- REVISED: Styling for each image 'box' --- */
+            /* --- Styling for each image 'box' --- */
             .image-box {{
                 width: 48%;
                 text-align: center;
@@ -149,13 +179,45 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
             }}
 
 
-            /* --- NEW: Style for the notes title --- */
+            /* --- Style for the notes title --- */
             .notes-title {{
                 display: inline-block;
                 border-bottom: 1px solid #bdc3c7; /* A light grey underline */
                 padding-bottom: 5px;             /* A little space between text and line */
                 margin-top: 30px;                /* Add some space above the title */
             }}
+
+            /* --- Styling for the Offline Printers section --- */
+            .offline-section {{
+                margin-top: 30px;
+                padding: 15px;
+                background-color: #fff9f9; /* A very light red background */
+                border: 1px solid #f2dede;   /* A light red border */
+                border-radius: 8px;
+            }}
+            .offline-section h3 {{
+                color: #a94442; /* A darker red for the title */
+                margin-top: 0;
+            }}
+            .offline-section ul {{
+                list-style-type: square;
+                padding-left: 20px;
+            }}
+            .offline-section li {{
+                margin-bottom: 5px;
+            }}
+
+            /* --- Styling for the multi-column grid layout for the Offline Printers section --- */
+            .offline-grid-container {{
+                display: flex;
+                flex-wrap: wrap; /* Allows items to wrap to the next line */
+                gap: 20px;       /* The space between the columns */
+            }}
+            .offline-grid-column {{
+                flex: 1 1 22%; /* Flex-grow, flex-shrink, and base width (approx 25% minus gap) */
+                min-width: 200px; /* Prevents columns from becoming too narrow */
+            }}
+
             
         </style>
     </head>
@@ -163,10 +225,10 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
 
         <h1>{excel_sheet_name} Printer Status Report -- {current_date}</h1>
         <p>
-            Weekly report of the Printer Fleet status, detailing both the overall distribution and a breakdown by device base code.
+            Report of the Printer Fleet status, detailing both the overall distribution and a breakdown by device base code.
         </p>
 
-        <!-- REVISED: The container holding both images -->
+        <!-- The container holding both images -->
         <div class="image-container">
 
             <!-- Box for the Pie Chart -->
@@ -187,9 +249,10 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
 
         </div>
 
+         <!-- The new Offline Printers section will be injected here -->
+        {offline_printers_html}
 
         <h3 class="notes-title">Printers Special Notes</h3>
-    
         <p>
             <!-- Special notes regarding offline printers will be detailed here. -->
             {html_special_notes_content}
@@ -199,8 +262,8 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     </html>
     """
 
-    # --- Write the HTML content to a file (unchanged) ---
-    file_name = 'Weekly_Printer_Report.html'
+    # --- Write the HTML content to a file ---
+    file_name = 'Printer_Report.html'
     with open(file_name, 'w') as f:
         f.write(html_content)
 
