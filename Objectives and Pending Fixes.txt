@@ -1,0 +1,16 @@
+OBJECTIVES
+----------
+
+- Check if the printers are online or offline by pinging them
+
+- Total Count of Online/Offline printers with "Pie Chart"
+
+- Count per base of Online/Offline printers, with "Bar Chart"
+
+- Auto-generate an HTML report with the charts, textual status per printer and the Special Notes for the Offline printers
+
+
+TO FIX
+------
+
+--> If the user enters a bad name, print the correspondent error message and reset the button and text-box.

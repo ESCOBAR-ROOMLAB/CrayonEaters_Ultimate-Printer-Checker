@@ -117,18 +117,24 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
 
     # --- PIE CHART GENERATION (REVISED) ---
 
-    # 1. Define a standard size for all report charts
+    # Define a standard size for all report charts
     chart_figsize = (10, 6)
 
-    # 2. Create a figure AND an axes object (the subplot)
-    #    This is the crucial change.
+    # Create a figure AND an axes object (the subplot)
     fig, ax = plt.subplots(figsize=chart_figsize)
 
     # Ensure that the name of the column for which we will plot values is a string
     status_column_value_str = str(status_column_value)
 
-    # --- Your data preparation logic is the same ---
+    # Prepare the data:
     status_counts = printers_dataframe[status_column_value_str].value_counts()
+
+    # Define a color for each specific status label.
+    color_map = {'Online': '#2ecc71', 'Offline': '#e74c3c'}
+
+    # Create a list of colors that is ordered to perfectly match the 'status_counts' labels. This ensures 'Offline' is always red, 
+    # regardless of its position in the data.
+    ordered_colors = [color_map.get(label, '#bdc3c7') for label in status_counts.index] #The '#bdc3c7' is a neutral grey fallback for any unexpected status.
 
     def make_autopct(values):
         def my_autopct(pct):
@@ -137,24 +143,23 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
             return f'{val}\n({pct:.1f}%)'
         return my_autopct
 
-    # 3. Draw the pie chart on the 'ax' object, not using 'plt'
+    # Draw the pie chart on the 'ax' object, not using 'plt'
     ax.pie(
         status_counts,
         labels=status_counts.index,
         autopct=make_autopct(status_counts),
         startangle=90,
-        colors=['#2ecc71', '#e74c3c'],
+        colors=ordered_colors,
         textprops={'fontsize': 14}
     )
 
     # Let Matplotlib automatically calculate the tightest layout to fill the figure
     fig.tight_layout(pad=0.5)
 
-    # This command ensures the pie is drawn as a circle, but now it's contained
-    # within the subplot, not dominating the whole figure.
+    # This command ensures the pie is drawn as a circle, but now it's contained within the subplot, not dominating the whole figure.
     ax.axis('equal') 
 
-    # 5. Save the figure object
+    # Save the figure object
     pie_chart_file_name = 'printer_status_pie-chart.png'
     fig.savefig(pie_chart_file_name, bbox_inches='tight', dpi=300)
 

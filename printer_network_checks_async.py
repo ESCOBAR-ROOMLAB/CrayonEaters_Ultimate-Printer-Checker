@@ -49,7 +49,7 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
         # This return value is crucial for the dictionary mapping solution.
         return (ip_address, status)
 
-async def ping_printers_async(printers_dataframe, ip_address_column_name_str):
+async def ping_printers_async(printers_dataframe, ip_address_column_name_str, progress_callback=None):
     """
     PURPOSE:
 
@@ -92,6 +92,11 @@ async def ping_printers_async(printers_dataframe, ip_address_column_name_str):
         counter = counter + 1
         progress_percentage = int((counter / ip_address_count) * 100)
         print(f"\rCurrent progress: {progress_percentage}%", end="")
+
+        # The callback function is called, passing this integer as its argument. This sends the current percentage value to the Worker
+        # process, so that the progress can be displayed in the GUI.
+        if progress_callback:
+            progress_callback(progress_percentage)
 
     print("\n===================================================================")
     print(f"Starting to ping {ip_address_count} devices with a concurrency limit of {CONCURRENT_LIMIT}...")
