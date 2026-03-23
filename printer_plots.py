@@ -91,7 +91,6 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
     print(f"\nBar chart with labels successfully saved as '{bar_chart_file_name}'")
     return bar_chart_file_name
 
-#########################################################################################################################################
 
 def generate_printer_pie_chart(printers_dataframe, status_column_value):
 

@@ -40,15 +40,18 @@ from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
 # This class will define the GUI graphically and add functionality to it.
 class PrinterCheckerApp(QWidget):
 
+
     # BASIC COMPONENTS
     # ----------------
     def __init__(self):
+
 
         ### <=== CONSTRUCTOR ===> ###
         # Run the CONSTRUCTOR of the parent class (QWidget): (It registers the widget with the PyQt/PySide framework, it allocates memory 
         # for painting, handling mouse clicks, and managing its position, it sets up its internal state, preparing it to be shown on the 
         # screen and it does hundreds of other complex setup tasks that you don't have to worry about.)
         super().__init__()
+
 
         ### <=== ESSENTIAL WIDGETS ===> ###
         # Create the widgets
@@ -58,15 +61,10 @@ class PrinterCheckerApp(QWidget):
         self.progress_indication_text_label = QLabel("Checking your stupid printers...", self) # Indicates that the porgram is running
         self.progress_counter_label = QLabel("0%", self) # Indicates the percentage of progress of the check
         
-        ### <=== LOAD THE GIF ===> ###
-        # Create an empty QLabel for the GIF
-        self.progress_gif_label = QLabel(self) 
-        # Create a QMovie object with your GIF
-        self.movie = QMovie("images/ultimate-printer-checker_slap.gif")
-        # Set the QMovie on the QLabel
-        self.progress_gif_label.setMovie(self.movie)
-        # Start the animation
-        self.movie.start()
+
+        ### <=== DISPLAY INTRO GIF ===> ###
+        self.show_intro_gif()
+
 
         ### <=== INITIALIZE THE LAYOUT ===> ###
         self.initUI() # Manage the layout of the widgets within the window
@@ -76,9 +74,11 @@ class PrinterCheckerApp(QWidget):
     # -------------------------------------------
     def initUI(self):
 
+
         ### <=== WINDOW TITLE ===> ###
         # Define the Windows Title
         self.setWindowTitle("CrayonEaters Ultimate Printer Checker")
+
 
         ### <=== MANAGE THE LAYOUT ===> ###
         # Add all the widgets to the vertical layout manager
@@ -99,6 +99,7 @@ class PrinterCheckerApp(QWidget):
         self.progress_indication_text_label.setAlignment(Qt.AlignCenter)
         self.progress_counter_label.setAlignment(Qt.AlignCenter)
         self.progress_gif_label.setAlignment(Qt.AlignCenter)
+
 
         ### <=== APPLY CSS STYLING ===> ###
         # Define the Object names for each widget:
@@ -154,6 +155,7 @@ class PrinterCheckerApp(QWidget):
             }
         """)
 
+
         ### <=== ADD FUNCTIONALITY ===> ###
         self.generate_report_and_update_tracker_button.clicked.connect(self.run_check)
 
@@ -167,26 +169,40 @@ class PrinterCheckerApp(QWidget):
         without having to stop their own work (i.e., without freezing the GUI).
         """
 
+
+        ### <=== GET AND VALIDATE USER INPUT ===> ###
+        # It reads the current text from the QLineEdit where the user types the sheet name. It then checks if the box is empty. This is a 
+        # "fail-fast" validation step. It ensures that the program has the necessary information before it goes through the effort of 
+        # creating threads and workers. If the input is invalid, it shows an error and stops immediately, re-enabling the button for the
+        # user to be able to try again.
+
+        # Extract the EXCEL sheet name from the text box:
+        excel_sheet_name = self.tracker_name_input.text()
+
+        # If empty...
+        if not excel_sheet_name:
+            self.show_error_gif(excel_sheet_name)
+            return
+
+        # Stop any current GIF (like the error GIF)
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
+
+        # Load and start the "running" GIF.
+        # NOTE: I am guessing the name of your running GIF. Please correct the path.
+        self.movie = QMovie("images/ultimate-printer-checker_slap.gif") # Or whatever your running GIF is called
+        self.progress_gif_label.setMovie(self.movie)
+        self.movie.start()
+
+
         ### <=== PREPARE THE USER INTERFACE FOR THE TASK ===> ###
         # The very first thing is to disable the "Run" button and update a status label.
         # This provides immediate feedback to the user that their click was successful. Disabling the button is crucial to prevent the 
         # user from clicking it again and starting multiple, conflicting background jobs at the same time.
         self.generate_report_and_update_tracker_button.setEnabled(False)
         self.progress_indication_text_label.setText("Preparing to run...")
-        
-        ### <=== GET AND VALIDATE USER INPUT ===> ###
-        # It reads the current text from the QLineEdit where the user types the sheet name. It then checks if the box is empty. This is a 
-        # "fail-fast" validation step. It ensures that the program has the necessary information before it goes through the effort of 
-        # creating threads and workers. If the input is invalid, it shows an error and stops immediately, re-enabling the button for the
-        # user to be able to try again.
-        excel_sheet_name = self.tracker_name_input.text()
 
-        if not excel_sheet_name:
-            self.progress_indication_text_label.setText("ERROR: Dumbass, you forgot to enter the godamn sheet name.")
-            # Re-enable the button, since the button's trigger process is not running yet
-            self.generate_report_and_update_tracker_button.setEnabled(True) 
-            return
-        
+       
         ### <=== CREATE THE BACKGROUND WORKER AND ITS "OFFICE" ===> ###
         # This creates a new, empty thread of execution. Think of this as building a new, empty office room. It doesn't do anything on its
         # own yet.
@@ -200,6 +216,7 @@ class PrinterCheckerApp(QWidget):
         # into that new, empty office (self.thread) I just created for you." 
         # From now on, all of the worker's code will run in that separate background thread.
         self.worker.moveToThread(self.thread)
+
         
         ### <=== SET UP THE COMMUNICATION CHANNELS (SIGNALS AND SLOTS) ===> ###
         # This section is like the project manager giving the specialist a set of instructions on how to report back. All the connect 
@@ -232,6 +249,7 @@ class PrinterCheckerApp(QWidget):
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
         
+
         ### <=== START THE WORK ===> ###
         # This is the final command. It tells the background thread to start its event loop. This call is non-blocking—it returns 
         # immediately. The thread.start() call immediately emits the thread.started signal. Because we connected that signal, it instantly
@@ -281,50 +299,103 @@ class PrinterCheckerApp(QWidget):
         
         # Display the received value of the percentage variable
         self.progress_counter_label.setText(f"{percentage}%")
+    
+
+    # EMPTY INPUT ERROR
+    # ------------------------
+    def show_error_gif(self, excel_sheet_name):
+        """
+        Show a different GIF if the user does not enter any text input in the text box.
+        """
+        if not excel_sheet_name:
+            self.progress_indication_text_label.setText("ERROR: Dumbass, you forgot to enter the godamn sheet name.")
+            # Stop any GIF that might already be running
+            if self.movie and self.movie.state() == QMovie.Running:
+                self.movie.stop()
+
+                # Load your new GIF for the empty input error.
+                # Replace the current GIF with the actual path.
+                self.movie = QMovie('images/ultimate-printer-checker_error_empty.gif')
+                self.progress_gif_label.setMovie(self.movie)
+                self.movie.start()
+
+            # Re-enable the button, since the button's trigger process is not running yet
+            self.generate_report_and_update_tracker_button.setEnabled(True) 
+            return
+
+
+    # INTRO DISPLAY
+    # -------------
+    def show_intro_gif(self):
+        # Create an empty QLabel for the GIF
+        self.progress_gif_label = QLabel(self) 
+        # Create a QMovie object with your GIF
+        self.movie = QMovie("images/ultimate-printer-checker_slap.gif")
+        # Set the QMovie on the QLabel
+        self.progress_gif_label.setMovie(self.movie)
+        # Start the animation
+        self.movie.start()
 
 
 # This class will manage the asynchronous task part of the GUI functionality.
 class Worker(QObject):
     """
-    A worker object that runs a long-running task in a separate thread.
+    A worker object that runs a long-running task in a separate thread. Its primary purpose is to run a time-consuming operation in 
+    a separate thread, preventing the main application window from freezing and becoming unresponsive.
     Emits signals to communicate with the main GUI thread.
     """
     
-    finished = pyqtSignal()
+    # DEFINE THE SIGNALS
+    # ------------------
+    # This defines a signal named finished. It carries no data. Its purpose is simply to announce, "The task is complete and was successful."
+    finished = pyqtSignal() 
+
+    # This defines an error signal. It is configured to carry a string (str). When an error occurs, the worker can emit this signal and 
+    # pass the error message along with it. The GUI can then display this message to the user.
     error = pyqtSignal(str)
+
+    # A signal to send general status updates as text. For example, it could emit messages like "Connecting to database..." or "Processing 
+    # row 500...".
     progress = pyqtSignal(str)
+
+    # A signal designed to send an integer (int). This is perfect for updating a progress bar in the GUI. The worker can emit 
+    # progress_percent.emit(25) to set the progress bar to 25%.
     progress_percent = pyqtSignal(int)
 
 
+    # CONSTRUCTOR
+    # -----------
     def __init__(self, excel_sheet_name: str):
         super().__init__()
         # Store the sheet name safely when the worker is created.
         self.excel_sheet_name = excel_sheet_name
 
 
+    # EXECUTE THE ASYNC PROGRAM
+    # -------------------------
     def run(self):
         """Executes the asynchronous main program."""
         try:
             self.progress.emit("Running, please wait...")
 
-            # ---  Define a callback that emits the signal ---
+            ### <=== PERCENTAGE COUNTER ===> ###
             # Create a simple, unnamed function called progress_callback. This function's only job is to take one input value and 
             # immediately 'emit' it using the progress_percent signal.
             progress_callback = lambda percentage: self.progress_percent.emit(percentage)
 
-            # --- MINIMAL CHANGE: Pass the callback to the main program ---
+            ### <=== RUN MAIN PROGRAM ===> ###
             asyncio.run(run_main_program(
                 self.excel_sheet_name,
                 # The main_program must be updated to accept and pass this down
                 progress_callback=progress_callback 
             ))
 
-            #asyncio.run(run_main_program(self.excel_sheet_name))
             self.finished.emit()
         except Exception as e:
             self.error.emit(str(e))
 
 
+# Ensure that this GUI only runs on the main program file, and not as an imported module on any other file
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     printerchecker_app = PrinterCheckerApp()

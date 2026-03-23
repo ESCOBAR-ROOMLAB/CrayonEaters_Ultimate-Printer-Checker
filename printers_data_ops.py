@@ -56,6 +56,7 @@ def create_printers_dataframe(excel_sheet_name):
     
     return all_printers_df
 
+
 def update_excel_table_status(excel_sheet_name, all_printers_df):
     """
     PURPOSE:
@@ -124,6 +125,7 @@ def update_excel_table_status(excel_sheet_name, all_printers_df):
             print("Workbook closed successfully.")
             print("===================================================================")
 
+
 def close_excel_file_if_open(file_path):
 
     """
@@ -184,6 +186,7 @@ def close_excel_file_if_open(file_path):
     if not process_found_and_killed:
         print("  -> File is not currently open. Proceeding.")
         print("===================================================================")
+
 
 def open_output_files(excel_file_path, report_file_path):
     """

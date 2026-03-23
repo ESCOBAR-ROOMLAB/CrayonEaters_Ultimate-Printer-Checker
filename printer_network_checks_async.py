@@ -12,6 +12,8 @@ import re
 
 #########################################################################################################################################
 
+# SEMAPHORE CONTROL
+# -----------------
 async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[str, str]:
     """
     (Internal async worker) Pings a single IP address under semaphore control.
@@ -21,10 +23,15 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
     # This 'async with' block ensures that no more than the semaphore's limit
     # of tasks can run this code block at the same time.
     async with semaphore:
+
+
+        ### <=== DEFINE THE PING COMMAND ===> ###
         # This logic is preserved from your original script.
         param = '-n' if platform.system().lower() == 'windows' else '-c'
         command = ['ping', param, '4', ip_address]
 
+
+        ### <=== CREATE AN ASYNCHRONOUS SUBPROCESS ===> ###
         # Creates an asynchronous subprocess to run the ping command.
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -36,8 +43,15 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
         stdout_bytes, _ = await process.communicate()
         ping_output = stdout_bytes.decode(errors='ignore')
         
-        # This logic is preserved from your original script.
+
+        ### <=== DETERMINE STATUS ===> ###
+        # Determine if the loss percentage is 100% or less.
+
+        # Initialize the status variable as "Offline"
         status = "Offline"
+
+        # This line is looking for text that looks exactly like (some number% loss), for example, (0% loss) or (100% loss). If it finds 
+        # it, the match variable will hold a special match object; otherwise, match will be None.
         match = re.search(r"\((\d+)% loss\)", ping_output)
         if match:
             loss_percentage = int(match.group(1))
@@ -49,6 +63,9 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
         # This return value is crucial for the dictionary mapping solution.
         return (ip_address, status)
 
+
+# RUN CHECK AND GENERATE UPDATES AND REPORTS
+# --------------------------------------------
 async def ping_printers_async(printers_dataframe, ip_address_column_name_str, progress_callback=None):
     """
     PURPOSE:
@@ -76,6 +93,7 @@ async def ping_printers_async(printers_dataframe, ip_address_column_name_str, pr
     or 'Offline' status. It also prints a counter indicating the progress, exactly
     like the original function.
     """
+
     # --- This section is for the concurrency limit ---
     CONCURRENT_LIMIT = 50 # Sets a safe limit on how many pings run at once.
     semaphore = asyncio.Semaphore(CONCURRENT_LIMIT)
@@ -86,6 +104,8 @@ async def ping_printers_async(printers_dataframe, ip_address_column_name_str, pr
     ip_address_count = printers_dataframe[ip_address_column_name_str].count()
     counter = 0
 
+
+    ### <=== UPDATE PROGRESS ===> ###
     def update_progress():
         """This nested function contains your original progress counter logic."""
         nonlocal counter
@@ -101,6 +121,8 @@ async def ping_printers_async(printers_dataframe, ip_address_column_name_str, pr
     print("\n===================================================================")
     print(f"Starting to ping {ip_address_count} devices with a concurrency limit of {CONCURRENT_LIMIT}...")
     
+
+    ### <=== RUN PINGS ===> ###
     # Prepares all the asynchronous tasks to be run.
     tasks = [_ping_worker(ip, semaphore) for ip in ip_list]
     
