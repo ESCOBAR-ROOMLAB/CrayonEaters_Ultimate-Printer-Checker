@@ -10,6 +10,11 @@ import os
 # the asynchronous network tasks concurrently without freezing the application.
 import asyncio
 
+
+# Used to parse the EXCEL tracker and get the list of EXCEl sheet names, which will be needed when
+# validating user input.
+import pandas as pd
+
 # From the 'main_program.py' file, import the primary 'main' asynchronous function.
 # It is renamed to 'run_main_program' here to create a clear, descriptive name for use within the GUI.
 from main_program import main as run_main_program
@@ -41,8 +46,8 @@ from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
 class PrinterCheckerApp(QWidget):
 
 
-    # BASIC COMPONENTS
-    # ----------------
+    # BASIC COMPONENTS AND INITIALIZATION
+    # -----------------------------------
     def __init__(self):
 
 
@@ -164,9 +169,16 @@ class PrinterCheckerApp(QWidget):
     # --------------------
     def run_check(self):
         """
+
+        PURPOSE
         This function acts as a project manager who needs to delegate a big, time-consuming job (pinging all the printers) to a 
         specialist worker. The manager's goal is to give the specialist the instructions, let them work independently, and get updates 
         without having to stop their own work (i.e., without freezing the GUI).
+
+        ARGUMENTS
+        excel_file = the absolute path of the EXCEL tracker of the printers. We will use it when validating the
+        user's input of the EXCEL sheet name, in the function that compares such input with the current names of
+        all the worksheets.
         """
 
 
@@ -179,9 +191,11 @@ class PrinterCheckerApp(QWidget):
         # Extract the EXCEL sheet name from the text box:
         excel_sheet_name = self.tracker_name_input.text()
 
-        # If empty...
-        if not excel_sheet_name:
-            self.show_error_gif(excel_sheet_name)
+        # Call the function to validate the user's input.
+        if self.check_sheet_name(excel_sheet_name) == True:
+            pass
+        # If false...
+        else:
             return
 
         # Stop any current GIF (like the error GIF)
@@ -189,7 +203,6 @@ class PrinterCheckerApp(QWidget):
             self.movie.stop()
 
         # Load and start the "running" GIF.
-        # NOTE: I am guessing the name of your running GIF. Please correct the path.
         self.movie = QMovie("images/ultimate-printer-checker_slap.gif") # Or whatever your running GIF is called
         self.progress_gif_label.setMovie(self.movie)
         self.movie.start()
@@ -288,6 +301,78 @@ class PrinterCheckerApp(QWidget):
         self.progress_indication_text_label.setText(f"Error: {error_message}")
 
 
+    # GET A FILE'S ABSOLUTE PATH
+    # --------------------------
+    def get_base_path(self):
+        """Gets the base path for the application, whether running as a script or frozen."""
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle (e.g., by PyInstaller)
+            return os.path.dirname(sys.executable)
+        else:
+            # If running as a normal .py script
+            return os.path.dirname(os.path.abspath(__file__))
+
+
+    # CHECK EXCEL SHEET NAME
+    # ----------------------
+    def check_sheet_name(self, excel_sheet_name):
+        """
+        PURPOSE
+        Checks if a user's input matches any of the worksheet names in an Excel file. 
+
+        ARGUMENTS
+        excel_file = The path to the Excel file.
+
+        RETURN VALUE
+        If the user input is empty or invalid, we will return a False boolean. If it matches one of
+        the worksheet names, we will returna True boolean.
+        """
+        
+        ### <=== GET THE EXCEL ABSOLUTE PATH ===> ###
+        # Get the EXCEL file path
+        BASE_PATH = self.get_base_path()
+        excel_file = os.path.join(BASE_PATH, 'Printer_Fleet_Table.xlsx')
+        print(excel_file)
+
+        ### <=== CHECK IF USER INPUT IS EMPTY ===> ###
+        if not excel_sheet_name:
+            self.progress_indication_text_label.setStyleSheet("""
+                    QLabel#progress_indication_text_label{
+                    font-size: 40px;
+                    }
+                """)
+            self.show_empty_error_gif(excel_sheet_name)
+            return False
+        
+        ### <=== CHECK IF USER INPUT IS A VALID EXCEL SHEET ===> ###
+        else:
+            try:
+                # Get the list of sheet names from the Excel file
+                xls = pd.ExcelFile(excel_file)
+                sheet_names_list = xls.sheet_names
+
+                # Check if the user's input matches any of the sheet names
+                if excel_sheet_name in sheet_names_list:
+                    print(f"Success! The worksheet '{excel_sheet_name}' was found in the Excel file.")
+                    return True   
+                else:
+                    print(f"Error: The worksheet '{excel_sheet_name}' was not found.")
+                    #print("Available worksheets are:", sheet_names)
+                    # Show the specific GIF for this:
+                    self.progress_indication_text_label.setStyleSheet("""
+                        QLabel#progress_indication_text_label{
+                        font-size: 40px;
+                        }
+                    """)
+                    self.show_wrong_name_gif(excel_sheet_name)
+                    return False
+
+            except FileNotFoundError:
+                print(f"Error: The file '{excel_file}' was not found.")
+            except Exception as e:
+                print(f"An error occurred: {e}")
+
+
     # DEFINE THE PROGRESS COUNTER
     # ---------------------------
     def update_progress_label(self, percentage):
@@ -303,12 +388,15 @@ class PrinterCheckerApp(QWidget):
 
     # EMPTY INPUT ERROR
     # ------------------------
-    def show_error_gif(self, excel_sheet_name):
+    def show_empty_error_gif(self, excel_sheet_name):
         """
         Show a different GIF if the user does not enter any text input in the text box.
         """
         if not excel_sheet_name:
-            self.progress_indication_text_label.setText("ERROR: Dumbass, you forgot to enter the godamn sheet name.")
+
+            # Display an error message:
+            self.progress_indication_text_label.setText("ERROR: Dumbass, you forgot to \nenter the godamn sheet name.")
+
             # Stop any GIF that might already be running
             if self.movie and self.movie.state() == QMovie.Running:
                 self.movie.stop()
@@ -322,6 +410,28 @@ class PrinterCheckerApp(QWidget):
             # Re-enable the button, since the button's trigger process is not running yet
             self.generate_report_and_update_tracker_button.setEnabled(True) 
             return
+
+    def show_wrong_name_gif(self, excel_sheet_name):
+        """
+        Show a different GIF if the user enters an inexistent worksheet name.
+        """
+
+        # Display an error message:
+        self.progress_indication_text_label.setText("ERROR: Retard, the name you entered \ndoes not exist.")
+
+        # Stop any GIF that might already be running
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
+
+            # Load your new GIF for the empty input error.
+            # Replace the current GIF with the actual path.
+            self.movie = QMovie('images/ultimate-printer-checker_wrong_worksheet.gif')
+            self.progress_gif_label.setMovie(self.movie)
+            self.movie.start()
+
+        # Re-enable the button, since the button's trigger process is not running yet
+        self.generate_report_and_update_tracker_button.setEnabled(True) 
+        return
 
 
     # INTRO DISPLAY

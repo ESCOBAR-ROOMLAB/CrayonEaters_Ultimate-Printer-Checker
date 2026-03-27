@@ -6,14 +6,14 @@ import asyncio
 # Used to check the operating system (e.g., Windows, Linux) to use the correct ping command syntax.
 import platform 
 
-# Stands for "regular expression"; used for advanced string searching and manipulation. Thanks to this module we can extract easily chunks of strings 
-# and place them on a separate column as column values (for example, the Base Code column)
+# Stands for "regular expression"; used for advanced string searching and manipulation. We use it to determine if the printers are online
+# or not by analyzing the text output of each PING subprocess.
 import re
 
 #########################################################################################################################################
 
-# SEMAPHORE CONTROL
-# -----------------
+# COROUTINE WITH SEMAPHORE CONTROL
+# --------------------------------
 async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[str, str]:
     """
     (Internal async worker) Pings a single IP address under semaphore control.
@@ -65,7 +65,7 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
 
 
 # RUN CHECK AND GENERATE UPDATES AND REPORTS
-# --------------------------------------------
+# ------------------------------------------
 async def ping_printers_async(printers_dataframe, ip_address_column_name_str, progress_callback=None):
     """
     PURPOSE:
@@ -94,18 +94,21 @@ async def ping_printers_async(printers_dataframe, ip_address_column_name_str, pr
     like the original function.
     """
 
-    # --- This section is for the concurrency limit ---
+
+    ### <=== LIMIT THE CONCURRENT PING PROCESSES ===>
     CONCURRENT_LIMIT = 50 # Sets a safe limit on how many pings run at once.
     semaphore = asyncio.Semaphore(CONCURRENT_LIMIT)
 
     ip_list = printers_dataframe[ip_address_column_name_str].tolist()
-    
-    # --- This section is for the progress counter (PRESERVED FROM YOUR ORIGINAL) ---
-    ip_address_count = printers_dataframe[ip_address_column_name_str].count()
-    counter = 0
 
 
     ### <=== UPDATE PROGRESS ===> ###
+    # Get the total count of printers being checked by counting the total number of IP addresses
+    ip_address_count = printers_dataframe[ip_address_column_name_str].count()
+
+    # Initialize the progress counter
+    counter = 0
+
     def update_progress():
         """This nested function contains your original progress counter logic."""
         nonlocal counter
