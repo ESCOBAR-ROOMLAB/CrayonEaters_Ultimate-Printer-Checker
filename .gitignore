@@ -3,9 +3,7 @@
 # --- Generated Reports & Plots ---
 # These files are created by the script and should not be version-controlled.
 Printer_Report.html
-printer_status_by_base_code_bar-chart.png
-printer_status_pie-chart.png
-where_did_i_left.txt
+documentation/where_did_i_left.txt
 
 
 # --- Code Explanations ---

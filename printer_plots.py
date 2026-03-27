@@ -8,6 +8,9 @@ import seaborn as sns
 # For operations with the DataFrame
 import pandas as pd
 
+# Import the os module to handle file paths
+import os
+
 #########################################################################################################################################
 
 def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status_column_name):
@@ -34,8 +37,7 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
     
     """
      
-    # --- BAR CHART GENERATION (with numerical labels) ---
-
+    ### <=== BAR CHART GENERATION (with numerical labels) ===> ###
     # Define the standard size
     chart_figsize = (10, 6) 
 
@@ -52,7 +54,7 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
         palette={'Online': '#2ecc71', 'Offline': '#e74c3c'}
     )
 
-    # --- NEW: Loop through the bars to add the count on top ---
+    # Loop through the bars to add the count on top
     # ax.patches contains the geometric shapes of the bars
     for p in ax.patches:
         # Get the height of the bar (which is the count)
@@ -80,16 +82,21 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
 
     # Let Matplotlib automatically calculate the tightest layout to fill the figure
     fig.tight_layout(pad=0.5)
+    
+    ### <=== SET THE OUTPUT FOLDER ===> ###
+    output_folder = "images"
 
+    ### <=== SAVE THE FILE AND CLOSE ===> ###
     # Save the figure object
     bar_chart_file_name = 'printer_status_by_base_code_bar-chart.png'
-    fig.savefig(bar_chart_file_name, bbox_inches='tight', dpi=300)
+    full_save_path = os.path.join(output_folder, bar_chart_file_name)
+    fig.savefig(full_save_path, bbox_inches='tight', dpi=300)
 
     # Close the plot
     plt.close(fig)
 
     print(f"\nBar chart with labels successfully saved as '{bar_chart_file_name}'")
-    return bar_chart_file_name
+    return full_save_path
 
 
 def generate_printer_pie_chart(printers_dataframe, status_column_value):
@@ -158,12 +165,17 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
     # This command ensures the pie is drawn as a circle, but now it's contained within the subplot, not dominating the whole figure.
     ax.axis('equal') 
 
+    ### <=== SET THE OUTPUT FOLDER ===> ###
+    output_folder = "images"
+
+    ### <=== SAVE THE FILE AND CLOSE ===> ###
     # Save the figure object
     pie_chart_file_name = 'printer_status_pie-chart.png'
-    fig.savefig(pie_chart_file_name, bbox_inches='tight', dpi=300)
+    full_save_path = os.path.join(output_folder, pie_chart_file_name)
+    fig.savefig(full_save_path, bbox_inches='tight', dpi=300)
 
     # 6. Close the plot
     plt.close(fig)
 
     print(f"\nPie chart successfully saved as '{pie_chart_file_name}'")
-    return pie_chart_file_name
+    return full_save_path
