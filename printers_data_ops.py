@@ -29,8 +29,10 @@ def create_printers_dataframe(excel_file, excel_sheet_name):
 
     ARGUMENTS:
 
+    excel_file = the absolute path of the EXCEl file
+
     excel_sheet_name = the name of the sheet inside the Excel file from which to
-                    read the printer data. It should be a string.
+    read the printer data. It should be a string.
 
     RETURN VALUE:
 
@@ -73,12 +75,13 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
 
     ARGUMENTS:
 
-    excel_sheet_name = the name of the sheet within the Excel workbook that needs
-                    to be updated. It should be a string.
+    excel_file = the absolute path of the EXCEl file
+
+    excel_sheet_name = the name of the sheet within the Excel workbook that needs to be updated. 
+    It should be a string.
                     
     all_printers_df  = the pandas DataFrame containing the full dataset, including
-                    the 'Status' column with the updated online/offline values
-                    that will be written to the file.
+    the 'Status' column with the updated online/offline values that will be written to the file.
 
     RETURN VALUE:
 
@@ -145,8 +148,8 @@ def close_excel_file_if_open(excel_file):
 
     ARGUMENTS:
 
-    file_path = The file path of the Excel workbook to check for. It should be
-                a string (e.g., 'Printer_Fleet_Table.xlsx').
+    excel_file = The file path of the Excel workbook to check for. It should be
+    a string (e.g., 'Printer_Fleet_Table.xlsx').
 
     RETURN VALUE:
 
@@ -208,9 +211,10 @@ def open_output_files(excel_file, report_file):
     ARGUMENTS:
 
     excel_file  = The file path of the Excel workbook that was updated.
-                       It should be a string.
+    It should be a string.
+    
     report_file = The file path of the HTML report that was generated.
-                       It should be a string.
+    It should be a string.
 
     RETURN VALUE:
 
