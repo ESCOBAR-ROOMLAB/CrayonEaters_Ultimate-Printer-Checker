@@ -16,7 +16,9 @@ import webbrowser
 
 #########################################################################################################################################
 
-def create_printers_dataframe(excel_sheet_name):
+# CREATE DATAFRAME
+# ----------------
+def create_printers_dataframe(excel_file, excel_sheet_name):
 
     """
     PURPOSE:
@@ -41,9 +43,9 @@ def create_printers_dataframe(excel_sheet_name):
 
     try:
         # Read the data from the specified sheet
-        all_printers_df = pd.read_excel('Printer_Fleet_Table.xlsx', sheet_name=excel_sheet_name)
+        all_printers_df = pd.read_excel(excel_file, sheet_name=excel_sheet_name)
     except FileNotFoundError:
-        print(f"ERROR: The file 'Printer_Fleet_Table.xlsx' was not found in this directory.")
+        print(f"ERROR: The path {excel_file} was not found.")
         exit()
     except Exception as e:
         print(f"An error occurred while reading the Excel file: {e}")
@@ -57,7 +59,9 @@ def create_printers_dataframe(excel_sheet_name):
     return all_printers_df
 
 
-def update_excel_table_status(excel_sheet_name, all_printers_df):
+# UPDATE THE STATUS COLUMN
+# ------------------------
+def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
     """
     PURPOSE:
 
@@ -91,7 +95,7 @@ def update_excel_table_status(excel_sheet_name, all_printers_df):
 
     try:
         # Load the existing workbook with openpyxl
-        workbook = load_workbook('Printer_Fleet_Table.xlsx')
+        workbook = load_workbook(excel_file)
         worksheet = workbook[excel_sheet_name]
 
         # Find the column number for the 'Status' column
@@ -126,7 +130,9 @@ def update_excel_table_status(excel_sheet_name, all_printers_df):
             print("===================================================================")
 
 
-def close_excel_file_if_open(file_path):
+# CLOSE THE EXCEL FILE IF OPEN
+# ----------------------------
+def close_excel_file_if_open(excel_file):
 
     """
     PURPOSE:
@@ -150,7 +156,7 @@ def close_excel_file_if_open(file_path):
 
     """
 
-    file_name_to_check = os.path.basename(file_path)
+    file_name_to_check = os.path.basename(excel_file)
     process_found_and_killed = False
     
     print("===================================================================")
@@ -188,7 +194,9 @@ def close_excel_file_if_open(file_path):
         print("===================================================================")
 
 
-def open_output_files(excel_file_path, report_file_path):
+# OPEN THE EXCEL AND REPORT FILES
+# -------------------------------
+def open_output_files(excel_file, report_file):
     """
     PURPOSE:
 
@@ -199,9 +207,9 @@ def open_output_files(excel_file_path, report_file_path):
 
     ARGUMENTS:
 
-    excel_file_path  = The file path of the Excel workbook that was updated.
+    excel_file  = The file path of the Excel workbook that was updated.
                        It should be a string.
-    report_file_path = The file path of the HTML report that was generated.
+    report_file = The file path of the HTML report that was generated.
                        It should be a string.
 
     RETURN VALUE:
@@ -215,8 +223,8 @@ def open_output_files(excel_file_path, report_file_path):
     
     try:
         # Get the full, absolute path to the files for reliability.
-        report_path_abs = os.path.abspath(report_file_path)
-        excel_path_abs = os.path.abspath(excel_file_path)
+        report_path_abs = os.path.abspath(report_file)
+        excel_path_abs = os.path.abspath(excel_file)
 
         # Open the HTML report in a new tab in the default web browser.
         webbrowser.open_new_tab('file://' + report_path_abs)

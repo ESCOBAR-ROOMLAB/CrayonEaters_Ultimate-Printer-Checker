@@ -67,7 +67,7 @@ async def main(excel_sheet_name, progress_callback=None):
     ### <=== DEFINE THE DATAFRAME ===> ###
     # First, we will define a DataFrame with pandas that contains all the dictionary keys as columns, so that we can operate and analize the data easily later on. 
     # We can enter whatever sheet we want to perform the check in: each sheet represents a site / excercise with its correspondent printers.
-    all_printers_df = printers_data_ops.create_printers_dataframe(excel_sheet_name)
+    all_printers_df = printers_data_ops.create_printers_dataframe(excel_file, excel_sheet_name)
 
 
     ### <=== CHECK ONLINE AND OFFLINE PRINTERS ===> ###
@@ -86,7 +86,7 @@ async def main(excel_sheet_name, progress_callback=None):
     all_printers_df['Status'] = all_printers_df['IP Address'].map(status_dict)
 
     # Lets add the Status column to the original EXCEL Table file, so the users can also see each printer state on the tracker.
-    printers_data_ops.update_excel_table_status(excel_sheet_name, all_printers_df)
+    printers_data_ops.update_excel_table_status(excel_file, excel_sheet_name, all_printers_df)
 
 
    ### <=== GET A COUNT OF ONLINE AND OFFLINE PRINTERS ===> ###
