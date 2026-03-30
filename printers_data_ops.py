@@ -14,6 +14,34 @@ import os
 # Provides a way to open files in a web browser.
 import webbrowser 
 
+# Import the logging module to be able to log errors and execution output
+import logging
+
+# Import the Rotating File Handler to rotate the logging file
+from logging.handlers import RotatingFileHandler
+
+########################################################################################################################################
+
+# SETUP LOGGING
+# -------------
+logger = logging.getLogger(__name__) # use the module's name as the name in the logs
+logger.setLevel(logging.INFO) # set the logging level
+
+# Use RotatingFileHandler.
+# maxBytes: 5 * 1024 * 1024 = 5 MB
+# backupCount=0: When the file is full, delete it and start a new one.
+handler = RotatingFileHandler(
+    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+)
+
+handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
+
+# Format the logs and set it for the HANDLER
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
+handler.setFormatter(formatter) 
+
+logger.addHandler(handler) # add the formatted HANDLER to the logger
+
 #########################################################################################################################################
 
 # CREATE DATAFRAME
@@ -46,16 +74,25 @@ def create_printers_dataframe(excel_file, excel_sheet_name):
     try:
         # Read the data from the specified sheet
         all_printers_df = pd.read_excel(excel_file, sheet_name=excel_sheet_name)
+        #------------------------------------------
+        logger.info("Dataframe creation succeded!")
+        #------------------------------------------
     except FileNotFoundError:
-        print(f"ERROR: The path {excel_file} was not found.")
+        #-------------------------------------------------------------------------------
+        logger.error(f"Dataframe creation failed: The path {excel_file} was not found.")
+        #-------------------------------------------------------------------------------
         exit()
     except Exception as e:
-        print(f"An error occurred while reading the Excel file: {e}")
+        #----------------------------------------------------------------------------------
+        logger.error(f"Dataframe creation failed: error while reading the Excel file: {e}")
+        #----------------------------------------------------------------------------------
         exit()
 
     # Check if the required column exists
     if 'IP Address' not in all_printers_df.columns:
-        print("ERROR: A column named 'IP Address' was not found in the Excel file.")
+        #------------------------------------------------------------------------------------------------------
+        logger.error("Dataframe creation failed: A column named 'IP Address' was not found in the Excel file.")
+        #------------------------------------------------------------------------------------------------------
         exit()
     
     return all_printers_df
@@ -93,9 +130,6 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
     """
 
     # Assuming 'printers_df' is your DataFrame with the new 'Status' column
-    print("\n===================================================================")
-    print("Opening Excel file to update it while preserving formatting...")
-
     try:
         # Load the existing workbook with openpyxl
         workbook = load_workbook(excel_file)
@@ -118,19 +152,26 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
         
         # Save the workbook
         workbook.save('Printer_Fleet_Table.xlsx')
-        print(f"Successfully updated 'Printer_Fleet_Table.xlsx' while preserving its format.")
+        #-------------------------------------------------------------------------------------------
+        logger.info(f"Successfully updated 'Printer_Fleet_Table.xlsx' while preserving its format.")
+        #-------------------------------------------------------------------------------------------
 
     except PermissionError:
-        print(f"\nERROR: Could not save 'Printer_Fleet_Table.xlsx'. Please make sure the file is closed.")
+        #---------------------------------------------------------------------------------------------------------------------------
+        logger.error(f"Updating EXCEl file failed: Could not save 'Printer_Fleet_Table.xlsx'. Please make sure the file is closed.")
+        #---------------------------------------------------------------------------------------------------------------------------
     except Exception as e:
-        print(f"\nAn unexpected error occurred while saving: {e}")
+        #------------------------------------------------------------------------------------------
+        logger.error(f"Updating EXCEl file failed: An unexpected error occurred while saving: {e}")
+        #------------------------------------------------------------------------------------------
     
     finally:
         # Ensure the workbook is closed, releasing the file lock.
         if workbook:
             workbook.close()
-            print("Workbook closed successfully.")
-            print("===================================================================")
+            #-------------------------------------------------------------
+            logger.info("Workbook closed successfully after updating it.")
+            #-------------------------------------------------------------
 
 
 # CLOSE THE EXCEL FILE IF OPEN
@@ -162,8 +203,9 @@ def close_excel_file_if_open(excel_file):
     file_name_to_check = os.path.basename(excel_file)
     process_found_and_killed = False
     
-    print("===================================================================")
-    print(f"Checking if '{file_name_to_check}' is open...")
+    #------------------------------------------------------------
+    logger.info(f"Checking if '{file_name_to_check}' is open...")
+    #------------------------------------------------------------
 
     # Iterate over all currently running processes on the system
     for proc in psutil.process_iter(['pid', 'name']):
@@ -174,14 +216,18 @@ def close_excel_file_if_open(excel_file):
                 for file_handle in proc.open_files():
                     # Check if the base name of the open file matches our target file
                     if file_name_to_check in os.path.basename(file_handle.path):
-                        print(f"  -> Found '{file_name_to_check}' open in process '{proc.info['name']}' (PID: {proc.pid}).")
-                        print("  -> Attempting to close the process to prevent errors...")
+                        #------------------------------------------------------------------------------------------------------------
+                        logger.warning(f"  -> Found '{file_name_to_check}' open in process '{proc.info['name']}' (PID: {proc.pid}).")
+                        logger.info("  -> Attempting to close the process to prevent errors...")
+                        #------------------------------------------------------------------------------------------------------------
                         
                         proc.kill()  # Forcefully terminate the process
                         proc.wait()  # Wait for the process to fully close
                         
-                        print("  -> Process closed successfully.")
-                        print("===================================================================")
+                        #-----------------------------------------------
+                        logger.info("  -> Process closed successfully.")
+                        #-----------------------------------------------
+
                         process_found_and_killed = True
                         break # Exit the inner loop (no need to check other files for this process)
             
@@ -190,12 +236,15 @@ def close_excel_file_if_open(excel_file):
 
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # These exceptions happen if a process terminates while we are checking it. It's safe to ignore.
+            #-----------------------------------------------
+            logger.warning("The EXCEL file was opened and its process terminated while checking if it was open.")
             continue
             
     if not process_found_and_killed:
-        print("  -> File is not currently open. Proceeding.")
-        print("===================================================================")
-
+        #----------------------------------------------------------
+        logger.info("  -> File is not currently open. Proceeding.")
+        #----------------------------------------------------------
+        
 
 # OPEN THE EXCEL AND REPORT FILES
 # -------------------------------

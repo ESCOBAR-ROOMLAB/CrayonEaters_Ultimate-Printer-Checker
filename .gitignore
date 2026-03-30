@@ -6,6 +6,9 @@ Printer_Report.html
 documentation/where_did_i_left.txt
 
 
+# --- The logging file ---
+execution_logs.log
+
 # --- Code Explanations ---
 code_explanations/
 

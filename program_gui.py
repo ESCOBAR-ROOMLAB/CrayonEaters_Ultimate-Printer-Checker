@@ -15,6 +15,12 @@ import asyncio
 # validating user input.
 import pandas as pd
 
+# Import the logging module to be able to log errors and execution output
+import logging
+
+# Import the Rotating File Handler to rotate the logging file
+from logging.handlers import RotatingFileHandler
+
 # From the 'main_program.py' file, import the primary 'main' asynchronous function.
 # It is renamed to 'run_main_program' here to create a clear, descriptive name for use within the GUI.
 from main_program import main as run_main_program
@@ -39,6 +45,28 @@ from PyQt5.QtGui import QPixmap, QMovie
 # --> QThread: Provides a separate thread of execution for running long-running tasks.
 # --> pyqtSignal: Allows for the creation of custom signals to communicate between threads.
 from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
+
+########################################################################################################################################
+
+# SETUP LOGGING
+# -------------
+logger = logging.getLogger(__name__) # use the module's name as the name in the logs
+logger.setLevel(logging.INFO) # set the logging level
+
+# Use RotatingFileHandler.
+# maxBytes: 5 * 1024 * 1024 = 5 MB
+# backupCount=0: When the file is full, delete it and start a new one.
+handler = RotatingFileHandler(
+    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+)
+
+handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
+
+# Format the logs and set it for the HANDLER
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
+handler.setFormatter(formatter) 
+
+logger.addHandler(handler) # add the formatted HANDLER to the logger
 
 ########################################################################################################################################
 
@@ -294,11 +322,16 @@ class PrinterCheckerApp(QWidget):
         cleanup and notification tasks only after the long-running background process has encountered an error. It acts as the 
         designated "error handler" for your application's main task.
 
-        The function is called by the run_check method when the worker job encounters an error.
+        The function is called by the run_check method when the worker job encounters an error. There is no need to argument it
+        when calling it with self.worker.error.connect, because we are arleady emitting the error from the Worker class in the 
+        "except" block.
         """
 
         # Update the status label
         self.progress_indication_text_label.setText(f"Error: {error_message}")
+        #--------------------------
+        logger.error(error_message)
+        #--------------------------
 
 
     # GET A FILE'S ABSOLUTE PATH
@@ -342,6 +375,9 @@ class PrinterCheckerApp(QWidget):
                     }
                 """)
             self.show_empty_error_gif(excel_sheet_name)
+            #----------------------------------------------------
+            logger.error("Some dumbfuck set an empty sheet name")
+            #----------------------------------------------------
             return False
         
         ### <=== CHECK IF USER INPUT IS A VALID EXCEL SHEET ===> ###
@@ -353,11 +389,14 @@ class PrinterCheckerApp(QWidget):
 
                 # Check if the user's input matches any of the sheet names
                 if excel_sheet_name in sheet_names_list:
-                    print(f"Success! The worksheet '{excel_sheet_name}' was found in the Excel file.")
+                    #---------------------------------------------------------------------------------------
+                    logger.info(f"Success! The worksheet '{excel_sheet_name}' was found in the Excel file.")
+                    #---------------------------------------------------------------------------------------
                     return True   
                 else:
-                    print(f"Error: The worksheet '{excel_sheet_name}' was not found.")
-                    #print("Available worksheets are:", sheet_names)
+                    #-----------------------------------------------------------------
+                    logger.error(f"The worksheet '{excel_sheet_name}' was not found.")
+                    #-----------------------------------------------------------------
                     # Show the specific GIF for this:
                     self.progress_indication_text_label.setStyleSheet("""
                         QLabel#progress_indication_text_label{
@@ -368,9 +407,13 @@ class PrinterCheckerApp(QWidget):
                     return False
 
             except FileNotFoundError:
-                print(f"Error: The file '{excel_file}' was not found.")
+                #-------------------------------------------------------------
+                logger.error(f"Error: The file '{excel_file}' was not found.")
+                #-------------------------------------------------------------
             except Exception as e:
-                print(f"An error occurred: {e}")
+                #--------------------------------------
+                logger.error(f"An error occurred: {e}")
+                #--------------------------------------
 
 
     # DEFINE THE PROGRESS COUNTER
