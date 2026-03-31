@@ -4,6 +4,8 @@
 # These files are created by the script and should not be version-controlled.
 Printer_Report.html
 documentation/where_did_i_left.txt
+documentation/suggested_improvements.txt
+documentation/objectives_and_pending_fixes.txt
 
 
 # --- The logging file ---

@@ -12,5 +12,3 @@ OBJECTIVES
 
 TO FIX
 ------
-
---> If the user enters a bad name, print the correspondent error message and reset the button and text-box.
