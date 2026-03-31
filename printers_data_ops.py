@@ -128,6 +128,9 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
     success or failure of the operation.
 
     """
+    # Initialize workbook to None before the try block. This is needed so if the user has the EXCEL file open and the program
+    # cannot open it, then the "finally" block can execute anyways instead of crashing due to an invalid "workbook" variable.
+    workbook = None 
 
     # Assuming 'printers_df' is your DataFrame with the new 'Status' column
     try:
@@ -156,17 +159,26 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
         logger.info(f"Successfully updated 'Printer_Fleet_Table.xlsx' while preserving its format.")
         #-------------------------------------------------------------------------------------------
 
-    except PermissionError:
-        #---------------------------------------------------------------------------------------------------------------------------
-        logger.error(f"Updating EXCEl file failed: Could not save 'Printer_Fleet_Table.xlsx'. Please make sure the file is closed.")
-        #---------------------------------------------------------------------------------------------------------------------------
     except Exception as e:
-        #------------------------------------------------------------------------------------------
-        logger.error(f"Updating EXCEl file failed: An unexpected error occurred while saving: {e}")
-        #------------------------------------------------------------------------------------------
+        if isinstance(e, PermissionError):
+            #---------------------------------------------------------------------------------------------------------------------------
+            logger.error(f"Updating EXCEL file failed: Could not save 'Printer_Fleet_Table.xlsx'. Please make sure the file is closed.")
+            #---------------------------------------------------------------------------------------------------------------------------
+            # Raise the expection so that the program_gui receives the error and handles it properly, displaying the pertinent message
+            # and GIF on the GUI 
+            raise e  
     
+        else:
+            #------------------------------------------------------------------------------------------
+            logger.error(f"Updating EXCEL file failed: An unexpected error occurred while saving: {e}")
+            #------------------------------------------------------------------------------------------
+            # Raise the expection so that the program_gui receives the error and handles it properly, displaying the pertinent message
+            # and GIF on the GUI 
+            raise e
+        
     finally:
-        # Ensure the workbook is closed, releasing the file lock.
+        # Ensure the workbook is closed, releasing the file lock. If the workbook variable is null, then we will avoid crashing the
+        # program and allowing tom log the correct message on the program_gui module
         if workbook:
             workbook.close()
             #-------------------------------------------------------------
@@ -217,15 +229,15 @@ def close_excel_file_if_open(excel_file):
                     # Check if the base name of the open file matches our target file
                     if file_name_to_check in os.path.basename(file_handle.path):
                         #------------------------------------------------------------------------------------------------------------
-                        logger.warning(f"  -> Found '{file_name_to_check}' open in process '{proc.info['name']}' (PID: {proc.pid}).")
-                        logger.info("  -> Attempting to close the process to prevent errors...")
+                        logger.warning(f"Found '{file_name_to_check}' open in process '{proc.info['name']}' (PID: {proc.pid}).")
+                        logger.info("Attempting to close the process to prevent errors...")
                         #------------------------------------------------------------------------------------------------------------
                         
                         proc.kill()  # Forcefully terminate the process
                         proc.wait()  # Wait for the process to fully close
                         
                         #-----------------------------------------------
-                        logger.info("  -> Process closed successfully.")
+                        logger.info("Process closed successfully.")
                         #-----------------------------------------------
 
                         process_found_and_killed = True
@@ -242,7 +254,7 @@ def close_excel_file_if_open(excel_file):
             
     if not process_found_and_killed:
         #----------------------------------------------------------
-        logger.info("  -> File is not currently open. Proceeding.")
+        logger.info("File is not currently open. Proceeding.")
         #----------------------------------------------------------
         
 
@@ -272,7 +284,10 @@ def open_output_files(excel_file, report_file):
     to the console indicating its actions or any errors encountered.
 
     """
-    print("\nOpening the generated HTML report and the updated Excel file...")
+
+    #-----------------------------------------------------------------------------
+    logger.info("Opening the generated HTML report and the updated Excel file...")
+    #-----------------------------------------------------------------------------
     
     try:
         # Get the full, absolute path to the files for reliability.
@@ -285,8 +300,16 @@ def open_output_files(excel_file, report_file):
         # Open the Excel file using the default application.
         # os.startfile() is a Windows-specific command.
         os.startfile(excel_path_abs)
+
+        #-----------------------------------------------------------------------------
+        logger.info("Files have been opened successfully")
+        #-----------------------------------------------------------------------------
         
     except FileNotFoundError as e:
-        print(f"  -> Error: Could not open a file because it was not found: {e.filename}")
+        #-----------------------------------------------------------------------------------------------------
+        logger.error(f"Opening the file failed: Could not open a file because it was not found: {e.filename}")
+        #-----------------------------------------------------------------------------------------------------
     except Exception as e:
-        print(f"  -> An unexpected error occurred while trying to open the files: {e}")
+        #-------------------------------------------------------------------------
+        print(f"An unexpected error occurred while trying to open the files: {e}")
+        #-------------------------------------------------------------------------

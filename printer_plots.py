@@ -11,6 +11,34 @@ import pandas as pd
 # Import the os module to handle file paths
 import os
 
+# Import the logging module to be able to log errors and execution output
+import logging
+
+# Import the Rotating File Handler to rotate the logging file
+from logging.handlers import RotatingFileHandler
+
+########################################################################################################################################
+
+# SETUP LOGGING
+# -------------
+logger = logging.getLogger(__name__) # use the module's name as the name in the logs
+logger.setLevel(logging.INFO) # set the logging level
+
+# Use RotatingFileHandler.
+# maxBytes: 5 * 1024 * 1024 = 5 MB
+# backupCount=0: When the file is full, delete it and start a new one.
+handler = RotatingFileHandler(
+    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+)
+
+handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
+
+# Format the logs and set it for the HANDLER
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
+handler.setFormatter(formatter) 
+
+logger.addHandler(handler) # add the formatted HANDLER to the logger
+
 #########################################################################################################################################
 
 def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status_column_name):
@@ -95,7 +123,10 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
     # Close the plot
     plt.close(fig)
 
-    print(f"\nBar chart with labels successfully saved as '{bar_chart_file_name}'")
+    #----------------------------------------------------------------------------------
+    logger.info(f"Bar chart with labels successfully saved in path '{full_save_path}'")
+    #----------------------------------------------------------------------------------
+
     return full_save_path
 
 
@@ -120,8 +151,6 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
     The function saves the pie plot as an image in PNG, to be later imported to the final report.
     
     """
-
-    # --- PIE CHART GENERATION (REVISED) ---
 
     # Define a standard size for all report charts
     chart_figsize = (10, 6)
@@ -174,8 +203,11 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
     full_save_path = os.path.join(output_folder, pie_chart_file_name)
     fig.savefig(full_save_path, bbox_inches='tight', dpi=300)
 
-    # 6. Close the plot
+    # Close the plot
     plt.close(fig)
 
-    print(f"\nPie chart successfully saved as '{pie_chart_file_name}'")
+    #----------------------------------------------------------------------
+    logger.info(f"Pie chart successfully saved in path '{full_save_path}'")
+    #----------------------------------------------------------------------
+
     return full_save_path

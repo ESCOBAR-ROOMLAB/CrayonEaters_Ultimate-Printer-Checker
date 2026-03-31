@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# ***IMPORT THE NECESSARY MODULES***
 # Import the module that contains fucntions to read, open and write the EXCEL Table with the printer Fleet
 import printers_data_ops
 
@@ -115,6 +111,7 @@ async def main(excel_sheet_name, progress_callback=None):
         "IP Address",
         progress_callback=progress_callback # Pass it down
     )
+    
     #------------------------------------------------------------------------
     logger.info("Network check complete. Proceeding with the status update.")
     #------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Import the 'sys' module, which provides access to system-specific parameters and functions,
 # essential for managing the application's lifecycle (e.g., sys.exit).
 import sys
@@ -9,7 +11,6 @@ import os
 # Import the 'asyncio' library, which is the foundation for running and managing
 # the asynchronous network tasks concurrently without freezing the application.
 import asyncio
-
 
 # Used to parse the EXCEL tracker and get the list of EXCEl sheet names, which will be needed when
 # validating user input.
@@ -37,14 +38,16 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QPushButt
 # From the PyQt5.QtGui module, import classes for handling graphical elements.
 # --> QPixmap: A class designed for displaying images, optimized for screen rendering.
 # --> QMovie: A class used for displaying animations, particularly animated GIFs.
-from PyQt5.QtGui import QPixmap, QMovie
+# --> QPainter: A class used for creating painting objects, used for our backgrounds.
+from PyQt5.QtGui import QPixmap, QMovie, QPainter
 
 # From the PyQt5.QtCore module, import core, non-GUI functionalities.
 # --> Qt: Provides a collection of flags and enums (e.g., for alignment).
 # --> QObject: The base class for all Qt objects, providing the signal and slot mechanism.
 # --> QThread: Provides a separate thread of execution for running long-running tasks.
 # --> pyqtSignal: Allows for the creation of custom signals to communicate between threads.
-from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
+# --> QSize: Allows to scale a GIF to a desired size as a mvoie object
+from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal, QSize
 
 ########################################################################################################################################
 
@@ -91,7 +94,7 @@ class PrinterCheckerApp(QWidget):
         self.tracker_label = QLabel("Enter the EXCEL sheet name: ", self) # Prompts the user to enter the name of the EXCEL sheet
         self.tracker_name_input = QLineEdit(self) # Creates a text box for the user to input the prompted data
         self.generate_report_and_update_tracker_button = QPushButton("I'm feeling complacient", self) # Creates the button for the user to start the check
-        self.progress_indication_text_label = QLabel("Checking your stupid printers...", self) # Indicates that the porgram is running
+        self.progress_indication_text_label = QLabel("Ready to check\nyour stupid printers...", self) # Indicates that the porgram is running
         self.progress_counter_label = QLabel("0%", self) # Indicates the percentage of progress of the check
         
 
@@ -102,12 +105,16 @@ class PrinterCheckerApp(QWidget):
         ### <=== INITIALIZE THE LAYOUT ===> ###
         self.initUI() # Manage the layout of the widgets within the window
 
+        #--------------------------------------------------
+        logger.info("The program GUI has been initialized")
+        #--------------------------------------------------
+
 
     # LAYOUT, STYLE AND ADDITION OF FUNCTIONALITY
     # -------------------------------------------
     def initUI(self):
 
-
+        
         ### <=== WINDOW TITLE ===> ###
         # Define the Windows Title
         self.setWindowTitle("CrayonEaters Ultimate Printer Checker")
@@ -136,6 +143,7 @@ class PrinterCheckerApp(QWidget):
 
         ### <=== APPLY CSS STYLING ===> ###
         # Define the Object names for each widget:
+        self.setObjectName("MainWindow")
         self.tracker_label.setObjectName("tracker_label")
         self.tracker_name_input.setObjectName("tracker_name_input")
         self.generate_report_and_update_tracker_button.setObjectName("generate_report_and_update_tracker_button")
@@ -145,7 +153,7 @@ class PrinterCheckerApp(QWidget):
 
         # Define the CSS Style Sheet by referencing widgets with their assigned object names.
         self.setStyleSheet("""
-
+                           
             /* This settings apply to all objects */
             QLabel, QPushButton{
                 font-family: calibri;
@@ -175,12 +183,33 @@ class PrinterCheckerApp(QWidget):
                            
             /* Only for the progress_indication_text_label object */
             QLabel#progress_indication_text_label{
-                font-size: 50px;
+                /* --- FONT --- */
+                font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+                font-size: 40px;       /* Smaller than the title, but still very readable */
+                font-weight: bold;     /* Bold to make it stand out */
+                font-style: italic;    /* Italic to signify it's a status message */
+
+                /* --- COLOR & BACKGROUND --- */
+                color: #2C3E50;        /* A dark, slightly desaturated slate blue/gray */
+                background-color: rgba(236, 240, 241, 0.7); /* A very light, semi-transparent gray (like frosted glass) */
+
+                /* --- SPACING & BORDER --- */
+                padding: 8px;
+                border-radius: 6px;
+                
+                /* A subtle border to contain the message */
+                border: 1px solid rgba(44, 62, 80, 0.5); 
             }
       
             /* Only for the progress_counter_label object */
             QLabel#progress_counter_label{
-                font-size: 50px;
+                font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+                font-size: 40px;   /* Make it large to be a focal point */
+                font-weight: bold; /* This is essential for the look */
+                
+                color: #2C3E50;    /* The vibrant, dark orange color */
+                
+                background-color: transparent; /* Ensure no background blocks the camo */
             }
                            
             /* Only for the progress_gif_label object */
@@ -209,6 +238,14 @@ class PrinterCheckerApp(QWidget):
         all the worksheets.
         """
 
+        ### <=== GETTING STARTED ===> ###
+        #----------------------------------------------------
+        logger.info("STARTING THE RUN_CHECK")
+        #----------------------------------------------------
+
+        # Ensure that the percentage counter is at 0%
+        self.update_progress_label(0)
+
 
         ### <=== GET AND VALIDATE USER INPUT ===> ###
         # It reads the current text from the QLineEdit where the user types the sheet name. It then checks if the box is empty. This is a 
@@ -218,6 +255,10 @@ class PrinterCheckerApp(QWidget):
 
         # Extract the EXCEL sheet name from the text box:
         excel_sheet_name = self.tracker_name_input.text()
+
+        #---------------------------------------------------------
+        logger.info("Checking the sheet name entered by the user")
+        #---------------------------------------------------------
 
         # Call the function to validate the user's input.
         if self.check_sheet_name(excel_sheet_name) == True:
@@ -231,7 +272,9 @@ class PrinterCheckerApp(QWidget):
             self.movie.stop()
 
         # Load and start the "running" GIF.
-        self.movie = QMovie("images/ultimate-printer-checker_slap.gif") # Or whatever your running GIF is called
+        self.movie = QMovie("images/ultimate-printer-checker_running_program.gif") # Or whatever your running GIF is called
+        # Pre-scale the movie's frames to a specific size.
+        self.movie.setScaledSize(QSize(350, 200))
         self.progress_gif_label.setMovie(self.movie)
         self.movie.start()
 
@@ -299,6 +342,19 @@ class PrinterCheckerApp(QWidget):
         self.thread.start()
 
 
+    # DEFINE THE PROGRESS COUNTER
+    # ---------------------------
+    def update_progress_label(self, percentage):
+        """
+        Updates the progress counter label with the percentage. The percentage argument is retrieved directly from the value that was 
+        emitted by the progress_percent signal in the Worker object.
+        
+        """
+        
+        # Display the received value of the percentage variable
+        self.progress_counter_label.setText(f"{percentage}%")
+    
+
     # END OF PROGRAM FUNCTIONS
     # ------------------------
     def report_finished(self):
@@ -311,7 +367,19 @@ class PrinterCheckerApp(QWidget):
         """
 
         # Update the status label
-        self.progress_indication_text_label.setText("Process complete! Files have been generated.")
+        self.progress_indication_text_label.setText("Process complete!\nReport generated.")
+
+        # Stop any GIF that might already be running
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
+
+            # Load your new GIF for the empty input error.
+            # Replace the current GIF with the actual path.
+            self.movie = QMovie('images/ultimate-printer-checker_report_finished.gif')
+            # Pre-scale the movie's frames to a specific size.
+            self.movie.setScaledSize(QSize(350, 200))
+            self.progress_gif_label.setMovie(self.movie)
+            self.movie.start()
 
         # Re-enable the button for the user to be able to run another check
         self.generate_report_and_update_tracker_button.setEnabled(True)
@@ -326,24 +394,30 @@ class PrinterCheckerApp(QWidget):
         when calling it with self.worker.error.connect, because we are arleady emitting the error from the Worker class in the 
         "except" block.
         """
-
+        
         # Update the status label
-        self.progress_indication_text_label.setText(f"Error: {error_message}")
+        self.progress_indication_text_label.setText(f"ERROR: {error_message}")
         #--------------------------
         logger.error(error_message)
         #--------------------------
 
+        # Stop any GIF that might already be running
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
 
-    # GET A FILE'S ABSOLUTE PATH
-    # --------------------------
-    def get_base_path(self):
-        """Gets the base path for the application, whether running as a script or frozen."""
-        if getattr(sys, 'frozen', False):
-            # If the application is run as a bundle (e.g., by PyInstaller)
-            return os.path.dirname(sys.executable)
-        else:
-            # If running as a normal .py script
-            return os.path.dirname(os.path.abspath(__file__))
+            # Load your new GIF for the empty input error.
+            # Replace the current GIF with the actual path.
+            self.movie = QMovie('images/ultimate-printer-checker_excel_generic_error.gif')
+            # Pre-scale the movie's frames to a specific size.
+            self.movie.setScaledSize(QSize(350, 200))
+            self.progress_gif_label.setMovie(self.movie)
+            self.movie.start()
+
+        # Re-enable the button, since the button's trigger process is not running yet
+        self.generate_report_and_update_tracker_button.setEnabled(True) 
+        # Reset the progress counter to 0
+        self.update_progress_label(0)
+        return
 
 
     # CHECK EXCEL SHEET NAME
@@ -405,31 +479,33 @@ class PrinterCheckerApp(QWidget):
                     """)
                     self.show_wrong_name_gif(excel_sheet_name)
                     return False
-
-            except FileNotFoundError:
-                #-------------------------------------------------------------
-                logger.error(f"Error: The file '{excel_file}' was not found.")
-                #-------------------------------------------------------------
+            
             except Exception as e:
-                #--------------------------------------
-                logger.error(f"An error occurred: {e}")
-                #--------------------------------------
+                if isinstance(e, PermissionError):
+                    # Call the function to display the pertinent error message and GIF
+                    self.show_excel_permission_denied_error_gif()
+                    # If it's a PermissionError, create a specific, helpful message.
+                    user_message = f"Permission Denied. Please CLOSE the Excel file and try again."
+                    #-------------------------
+                    logger.error(user_message)
+                    #-------------------------
+                elif isinstance(e, FileNotFoundError):
+                    # Call the function to display the pertinent error message and GIF
+                    self.show_excel_file_not_found_error_gif()
+                    # You can extend this for other common errors too!
+                    user_message = f"File Not Found. Please ensure '{self.excel_sheet_name}' exists."
+                    #-------------------------
+                    logger.error(user_message)
+                    #-------------------------
+                else:
+                    # For all other unexpected errors, just use the default error message.
+                    user_message = str(e)
+                    #-------------------------
+                    logger.error(user_message)
+                    #-------------------------
 
 
-    # DEFINE THE PROGRESS COUNTER
-    # ---------------------------
-    def update_progress_label(self, percentage):
-        """
-        Updates the progress counter label with the percentage. The percentage argument is retrieved directly from the value that was 
-        emitted by the progress_percent signal in the Worker object.
-        
-        """
-        
-        # Display the received value of the percentage variable
-        self.progress_counter_label.setText(f"{percentage}%")
-    
-
-    # EMPTY INPUT ERROR
+    # INPUT ERRORS
     # ------------------------
     def show_empty_error_gif(self, excel_sheet_name):
         """
@@ -460,7 +536,7 @@ class PrinterCheckerApp(QWidget):
         """
 
         # Display an error message:
-        self.progress_indication_text_label.setText("ERROR: Retard, the name you entered \ndoes not exist.")
+        self.progress_indication_text_label.setText("ERROR: Retard, the name you entered\ndoes not exist.")
 
         # Stop any GIF that might already be running
         if self.movie and self.movie.state() == QMovie.Running:
@@ -477,6 +553,66 @@ class PrinterCheckerApp(QWidget):
         return
 
 
+    # EXCEL FILE OPEN OR NOT FOUND ERROR
+    # ----------------------------------
+    def show_excel_permission_denied_error_gif(self):
+        """
+        Show a different GIF and error message when the EXCEL file is open
+        """
+        # Show the specific GIF for this:
+        self.progress_indication_text_label.setStyleSheet("""
+            QLabel#progress_indication_text_label{
+            font-size: 40px;
+            }
+        """)
+
+        # Display an error message:
+        self.progress_indication_text_label.setText("ERROR: Devil, close the godamn \nEXCEL tracker for this to run")
+
+        # Stop any GIF that might already be running
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
+
+            # Load your new GIF for the empty input error.
+            # Replace the current GIF with the actual path.
+            self.movie = QMovie('images/ultimate-printer-checker_excel_file_error.gif')
+            self.progress_gif_label.setMovie(self.movie)
+            self.movie.start()
+
+        # Re-enable the button, since the button's trigger process is not running yet
+        self.generate_report_and_update_tracker_button.setEnabled(True) 
+        return
+        
+    def show_excel_file_not_found_error_gif(self):
+        """
+        Show a different GIF and error message when the EXCEL file not found
+        """
+
+        # Show the specific GIF for this:
+        self.progress_indication_text_label.setStyleSheet("""
+            QLabel#progress_indication_text_label{
+            font-size: 40px;
+            }
+        """)
+
+        # Display an error message:
+        self.progress_indication_text_label.setText("ERROR: Jarhead, where did you put \nthe EXCEL tracker?")
+
+        # Stop any GIF that might already be running
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
+
+            # Load your new GIF for the empty input error.
+            # Replace the current GIF with the actual path.
+            self.movie = QMovie('images/ultimate-printer-checker_excel_file_error.gif')
+            self.progress_gif_label.setMovie(self.movie)
+            self.movie.start()
+
+        # Re-enable the button, since the button's trigger process is not running yet
+        self.generate_report_and_update_tracker_button.setEnabled(True) 
+        return
+
+
     # INTRO DISPLAY
     # -------------
     def show_intro_gif(self):
@@ -484,10 +620,58 @@ class PrinterCheckerApp(QWidget):
         self.progress_gif_label = QLabel(self) 
         # Create a QMovie object with your GIF
         self.movie = QMovie("images/ultimate-printer-checker_slap.gif")
+        # Pre-scale the movie's frames to a specific size.
+        self.movie.setScaledSize(QSize(350, 200))
         # Set the QMovie on the QLabel
-        self.progress_gif_label.setMovie(self.movie)
+        self.progress_gif_label.setMovie(self.movie)    
         # Start the animation
         self.movie.start()
+
+
+    # BACKGROUND COLOR
+    # ----------------
+    def paintEvent(self, event):
+        """
+        This special method is called whenever the window needs to be redrawn.
+        We override it to manually draw our tiled background image first.
+
+        A paintEvent is a specific type of event. PyQt sends this event to our widget 
+        whenever it determines that the widget needs to be redrawn. This happens:
+
+        - On First Show: The very first time window.show() is called, a paintEvent is 
+        triggered to draw the window and all its contents for the first time.
+
+        - On Resize: If the user grabs the corner of the window and resizes it, the area 
+        needs to be redrawn, so a paintEvent is sent.
+
+        - On Uncover: If the window was previously hidden behind another window and is now 
+        brought to the front, the newly visible parts must be redrawn, triggering a paintEvent.
+
+        - On Programmatic Update: If you call widget.update() or widget.repaint() in your code, 
+        you are manually telling PyQt, "This widget's appearance has changed, please schedule a 
+        paintEvent for it as soon as you can."
+        """
+        # Create a QPainter object, which is used for all drawing operations.
+        painter = QPainter(self)
+
+        # Load our camouflage image into a QPixmap object.
+        # A QPixmap is an optimized object for displaying images on screen.
+        pixmap = QPixmap("images/camo_light.png") # Use the larger pattern image
+
+        # Use drawTiledPixmap to repeat the image across the entire window area (self.rect()).
+        painter.drawTiledPixmap(self.rect(), pixmap)
+
+
+    # GET A FILE'S ABSOLUTE PATH
+    # --------------------------
+    def get_base_path(self):
+        """Gets the base path for the application, whether running as a script or frozen."""
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle (e.g., by PyInstaller)
+            return os.path.dirname(sys.executable)
+        else:
+            # If running as a normal .py script
+            return os.path.dirname(os.path.abspath(__file__))
 
 
 # This class will manage the asynchronous task part of the GUI functionality.
@@ -529,7 +713,7 @@ class Worker(QObject):
     def run(self):
         """Executes the asynchronous main program."""
         try:
-            self.progress.emit("Running, please wait...")
+            self.progress.emit("Running,\nwait you impatient fuck...")
 
             ### <=== PERCENTAGE COUNTER ===> ###
             # Create a simple, unnamed function called progress_callback. This function's only job is to take one input value and 
@@ -545,8 +729,32 @@ class Worker(QObject):
 
             self.finished.emit()
         except Exception as e:
-            self.error.emit(str(e))
+            # First, always log the full technical error for our own debugging
+            #----------------------------------------------------------
+            logger.error(f"Background task failed: {e}", exc_info=True)
+            #----------------------------------------------------------
 
+            if isinstance(e, PermissionError):
+                # If it's a PermissionError, create a specific, helpful message.
+                user_message = f"Permission Denied.\nPlease CLOSE the Excel file and try again."
+                #-------------------------
+                logger.error(user_message)
+                #-------------------------
+            elif isinstance(e, FileNotFoundError):
+                # You can extend this for other common errors too!
+                user_message = f"File Not Found.\nPlease ensure '{self.excel_sheet_name}' exists."
+                #-------------------------
+                logger.error(user_message)
+                #-------------------------
+            else:
+                # For all other unexpected errors, just use the default error message.
+                user_message = str(e)
+                #-------------------------
+                logger.error(user_message)
+                #-------------------------
+
+            self.error.emit(str(user_message))
+                
 
 # Ensure that this GUI only runs on the main program file, and not as an imported module on any other file
 if __name__ == "__main__":

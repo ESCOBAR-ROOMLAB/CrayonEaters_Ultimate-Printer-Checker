@@ -1,11 +1,42 @@
 # Used to encode and decode binary data (like images) into ASCII text format.
 import base64
 
+# Import the logging module to be able to log errors and execution output
+import logging
+
 # We need this one to be able to query the current date and store it in a variable.
 from datetime import date
 
+# Import the Rotating File Handler to rotate the logging file
+from logging.handlers import RotatingFileHandler
+
+########################################################################################################################################
+
+# SETUP LOGGING
+# -------------
+logger = logging.getLogger(__name__) # use the module's name as the name in the logs
+logger.setLevel(logging.INFO) # set the logging level
+
+# Use RotatingFileHandler.
+# maxBytes: 5 * 1024 * 1024 = 5 MB
+# backupCount=0: When the file is full, delete it and start a new one.
+handler = RotatingFileHandler(
+    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+)
+
+handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
+
+# Format the logs and set it for the HANDLER
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
+handler.setFormatter(formatter) 
+
+logger.addHandler(handler) # add the formatted HANDLER to the logger
+
+
 #########################################################################################################################################
 
+# GENERATE HTML REPORT
+# --------------------
 def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_chart_image, bar_chart_image):
 
     """
@@ -34,20 +65,21 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     # Get the current date and store it in a variable
     current_date = date.today()
 
-    # --- Helper function to encode images ---
+    ### <=== HELPER FUNCTION TO ENCODE IMAGES ===> ###
     # This function reads an image file and converts it into a text string
     # that can be embedded directly into the HTML file.
     def image_to_base64_string(image_path):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
 
-    # --- Encode your images ---
+    ### <=== ENCODING PLOT IMAGES ===> ###
     try:
         pie_chart_base64 = image_to_base64_string(pie_chart_image)
         bar_plot_base64 = image_to_base64_string(bar_chart_image)
+        logger.info("Plot images have been successfully encoded")
     except FileNotFoundError as e:
-        print(f"Error: Could not find an image file. Make sure your script is in the same folder as your PNG images.")
-        print(f"File not found: {e.filename}")
+        logger.error(f"Encoding plot images failed: Could not find an image file. Make sure your script is in the same folder as your PNG images.")
+        logger.error(f"Encoding plot images failed: File not found: {e.filename}")
         exit() # Stop the script if an image is missing
 
    
@@ -55,10 +87,10 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     # whose status is Offline and have a Special Note are not reachable in the network. Some printers may have a Special  Note inputted 
     # on the 'printers_data' dictionary. Also, we want to include a section listing the Offline printers by site / base.
 
-    # --- Filter for rows that have a special note ---
+    ### <=== FILTER FOR ROWS THAT HAVE A SPECIAL NOTE ===> ###
     printers_with_notes = printers_dataframe[printers_dataframe['Special Notes'].notna()].copy()
 
-    # --- Build the HTML content with grouping ---
+    ### <=== BUILD THE HTML CONTENT WITH GROUPING ===> ###
     if not printers_with_notes.empty:
         # Use groupby to process each 'base_code' separately
         printers_with_notes_grouped_by_base = printers_with_notes.groupby('Base Code') 
@@ -88,8 +120,7 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     else:
         html_special_notes_content = "No special notes for any printers this week." 
 
-    # --- Build the HTML for the Offline Printers section ---
-    offline_printers_html = ""
+    ### <=== BUILDING THE HTML FOR THE OFFLINE PRINTERS SECTION ===> ###
     offline_printers_df = printers_dataframe[printers_dataframe['Status'] == 'Offline']
 
     if not offline_printers_df.empty:
@@ -118,8 +149,7 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
         # Close the main section div
         offline_printers_html += '</div>'
 
-    # Now we can define the report and its generation as an HTML file.
-    # --- Define the NEW HTML structure for the report ---
+    ### <=== HTML CONTENT ===> ###
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -267,4 +297,6 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     with open(file_name, 'w') as f:
         f.write(html_content)
 
-    print(f"\nReport successfully generated and saved as '{file_name}'")
+    #-------------------------------------------------------------------------
+    logger.info(f"Report successfully generated and saved as '{file_name}'")
+    #-------------------------------------------------------------------------
