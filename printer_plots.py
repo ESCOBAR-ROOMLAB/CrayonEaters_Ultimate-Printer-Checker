@@ -120,7 +120,7 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
 
     ### <=== SAVE THE FILE AND CLOSE ===> ###
     # Save the figure object
-    bar_chart_file_path = common_helper_functions.get_absolute_path('images/printer_status_by_base_code_bar-chart.png')
+    bar_chart_file_path = common_helper_functions.get_absolute_path('images\printer_status_by_base_code_bar-chart.png')
     fig.savefig(bar_chart_file_path, bbox_inches='tight', dpi=300)
 
     # Close the plot
@@ -229,7 +229,7 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
 
     ### <=== SAVE THE FILE AND CLOSE ===> ###
     # Save the figure object
-    pie_chart_file_path = common_helper_functions.get_absolute_path('images/printer_status_pie-chart.png')
+    pie_chart_file_path = common_helper_functions.get_absolute_path('images\printer_status_pie-chart.png')
     fig.savefig(pie_chart_file_path, bbox_inches='tight', dpi=300)
 
     # Close the plot
