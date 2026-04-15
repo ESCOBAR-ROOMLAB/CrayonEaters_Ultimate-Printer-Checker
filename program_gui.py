@@ -4,10 +4,6 @@
 # essential for managing the application's lifecycle (e.g., sys.exit).
 import sys
 
-# Import the 'os' module, which provides a way of using operating system dependent
-# functionality like reading or writing to the file system.
-import os
-
 # Import the 'asyncio' library, which is the foundation for running and managing
 # the asynchronous network tasks concurrently without freezing the application.
 import asyncio
@@ -15,12 +11,6 @@ import asyncio
 # Used to parse the EXCEL tracker and get the list of EXCEl sheet names, which will be needed when
 # validating user input.
 import pandas as pd
-
-# Import the logging module to be able to log errors and execution output
-import logging
-
-# Import the Rotating File Handler to rotate the logging file
-from logging.handlers import RotatingFileHandler
 
 # From the 'main_program.py' file, import the primary 'main' asynchronous function.
 # It is renamed to 'run_main_program' here to create a clear, descriptive name for use within the GUI.
@@ -49,6 +39,15 @@ from PyQt5.QtGui import QPixmap, QMovie, QPainter
 # --> QSize: Allows to scale a GIF to a desired size as a mvoie object
 from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal, QSize
 
+# This module will provide us useful helper functions
+import common_helper_functions
+
+# This module allows us to log errors and execution output
+import logging
+
+# This module allows us to rotate the logging file
+from logging.handlers import RotatingFileHandler
+
 ########################################################################################################################################
 
 # SETUP LOGGING
@@ -56,20 +55,21 @@ from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal, QSize
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
+log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
 # backupCount=0: When the file is full, delete it and start a new one.
 handler = RotatingFileHandler(
-    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+    log_file_path, maxBytes=5*1024*1024, backupCount=0
 )
-
-handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
 
 # Format the logs and set it for the HANDLER
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
-handler.setFormatter(formatter) 
+handler.setFormatter(formatter)
 
-logger.addHandler(handler) # add the formatted HANDLER to the logger
+# Add the formatted HANDLER to the logger
+logger.addHandler(handler)
 
 ########################################################################################################################################
 
@@ -80,6 +80,27 @@ class PrinterCheckerApp(QWidget):
     # BASIC COMPONENTS AND INITIALIZATION
     # -----------------------------------
     def __init__(self):
+
+        """
+        PURPOSE
+        -------
+        Initializes the main application window and all its components. As the constructor
+        for the `PrinterCheckerApp` class, this method sets up the entire graphical user
+        interface (GUI). It creates the essential widgets (labels, text inputs, buttons),
+        displays an introductory animation, and calls the `initUI` method to handle the
+        layout, styling, and final setup.
+
+        
+        ARGUMENTS
+        ---------
+        None.
+
+
+        RETURN VALUE
+        ------------
+        None. This is a constructor and does not return any value. It configures the
+        application window instance in place.
+        """
 
 
         ### <=== CONSTRUCTOR ===> ###
@@ -114,9 +135,30 @@ class PrinterCheckerApp(QWidget):
     # -------------------------------------------
     def initUI(self):
 
+        """
+        PURPOSE
+        -------
+        Finalizes the setup and presentation of the graphical user interface. This method
+        organizes all pre-created widgets into a vertical layout, applies specific visual
+        styling using CSS (Cascading Style Sheets), sets object names for individual
+        widgets to allow for targeted styling, and connects the primary user action
+        (clicking the "Run Check" button) to its corresponding function (`run_check`).
+
+        
+        ARGUMENTS
+        ---------
+        None.
+
+        
+        RETURN VALUE
+        ------------
+        None. This method modifies the application window and its widgets in place,
+        configuring their layout, appearance, and behavior.
+        """
+
         
         ### <=== WINDOW TITLE ===> ###
-        # Define the Windows Title
+        # Define the Window's Title
         self.setWindowTitle("CrayonEaters Ultimate Printer Checker")
 
 
@@ -225,23 +267,33 @@ class PrinterCheckerApp(QWidget):
     # DEFINE FUNCTIONALITY
     # --------------------
     def run_check(self):
+        
         """
-
         PURPOSE
-        This function acts as a project manager who needs to delegate a big, time-consuming job (pinging all the printers) to a 
-        specialist worker. The manager's goal is to give the specialist the instructions, let them work independently, and get updates 
-        without having to stop their own work (i.e., without freezing the GUI).
+        -------
+        Acts as the main controller for initiating the printer check process. When triggered
+        by the user, this method validates the provided Excel sheet name, prepares the user
+        interface by disabling controls and displaying progress indicators, and then delegates
+        the time-consuming network task to a `Worker` object. This `Worker` is moved to a
+        separate `QThread` to ensure the main application GUI remains responsive and does not
+        freeze during the operation.
 
         ARGUMENTS
-        excel_file = the absolute path of the EXCEL tracker of the printers. We will use it when validating the
-        user's input of the EXCEL sheet name, in the function that compares such input with the current names of
-        all the worksheets.
+        ---------
+        None. The method retrieves all necessary input directly from the GUI widgets, such
+        as the Excel sheet name from `self.tracker_name_input`.
+
+        RETURN VALUE
+        ------------
+        None. This function's purpose is to configure and launch a background process. It does
+        not return any value. All results and status updates are communicated back to the
+        GUI asynchronously via signals and slots.
         """
 
         ### <=== GETTING STARTED ===> ###
-        #----------------------------------------------------
+        #------------------------------------
         logger.info("STARTING THE RUN_CHECK")
-        #----------------------------------------------------
+        #------------------------------------
 
         # Ensure that the percentage counter is at 0%
         self.update_progress_label(0)
@@ -272,7 +324,8 @@ class PrinterCheckerApp(QWidget):
             self.movie.stop()
 
         # Load and start the "running" GIF.
-        self.movie = QMovie("images/ultimate-printer-checker_running_program.gif") # Or whatever your running GIF is called
+        gif_file = common_helper_functions.get_absolute_path("images/ultimate-printer-checker_running_program.gif") # get the path for the GIF
+        self.movie = QMovie(gif_file) # Or whatever your running GIF is called
         # Pre-scale the movie's frames to a specific size.
         self.movie.setScaledSize(QSize(350, 200))
         self.progress_gif_label.setMovie(self.movie)
@@ -375,7 +428,8 @@ class PrinterCheckerApp(QWidget):
 
             # Load your new GIF for the empty input error.
             # Replace the current GIF with the actual path.
-            self.movie = QMovie('images/ultimate-printer-checker_report_finished.gif')
+            gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_report_finished.gif') # get the path for the GIF
+            self.movie = QMovie(gif_file)
             # Pre-scale the movie's frames to a specific size.
             self.movie.setScaledSize(QSize(350, 200))
             self.progress_gif_label.setMovie(self.movie)
@@ -397,9 +451,6 @@ class PrinterCheckerApp(QWidget):
         
         # Update the status label
         self.progress_indication_text_label.setText(f"ERROR: {error_message}")
-        #--------------------------
-        logger.error(error_message)
-        #--------------------------
 
         # Stop any GIF that might already be running
         if self.movie and self.movie.state() == QMovie.Running:
@@ -407,7 +458,8 @@ class PrinterCheckerApp(QWidget):
 
             # Load your new GIF for the empty input error.
             # Replace the current GIF with the actual path.
-            self.movie = QMovie('images/ultimate-printer-checker_excel_generic_error.gif')
+            gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_excel_generic_error.gif') # get the path for the GIF
+            self.movie = QMovie(gif_file)
             # Pre-scale the movie's frames to a specific size.
             self.movie.setScaledSize(QSize(350, 200))
             self.progress_gif_label.setMovie(self.movie)
@@ -423,22 +475,27 @@ class PrinterCheckerApp(QWidget):
     # CHECK EXCEL SHEET NAME
     # ----------------------
     def check_sheet_name(self, excel_sheet_name):
+
         """
         PURPOSE
+        -------
         Checks if a user's input matches any of the worksheet names in an Excel file. 
 
+        
         ARGUMENTS
+        ---------
         excel_file = The path to the Excel file.
 
+        
         RETURN VALUE
+        ------------
         If the user input is empty or invalid, we will return a False boolean. If it matches one of
         the worksheet names, we will returna True boolean.
         """
         
         ### <=== GET THE EXCEL ABSOLUTE PATH ===> ###
         # Get the EXCEL file path
-        BASE_PATH = self.get_base_path()
-        excel_file = os.path.join(BASE_PATH, 'Printer_Fleet_Table.xlsx')
+        excel_file = common_helper_functions.get_absolute_path('Printer_Fleet_Table.xlsx')
         print(excel_file)
 
         ### <=== CHECK IF USER INPUT IS EMPTY ===> ###
@@ -448,7 +505,7 @@ class PrinterCheckerApp(QWidget):
                     font-size: 40px;
                     }
                 """)
-            self.show_empty_error_gif(excel_sheet_name)
+            self.show_empty_error_gif()
             #----------------------------------------------------
             logger.error("Some dumbfuck set an empty sheet name")
             #----------------------------------------------------
@@ -477,7 +534,7 @@ class PrinterCheckerApp(QWidget):
                         font-size: 40px;
                         }
                     """)
-                    self.show_wrong_name_gif(excel_sheet_name)
+                    self.show_wrong_name_gif()
                     return False
             
             except Exception as e:
@@ -493,7 +550,7 @@ class PrinterCheckerApp(QWidget):
                     # Call the function to display the pertinent error message and GIF
                     self.show_excel_file_not_found_error_gif()
                     # You can extend this for other common errors too!
-                    user_message = f"File Not Found. Please ensure '{self.excel_sheet_name}' exists."
+                    user_message = f"File Not Found. Please ensure '{excel_sheet_name}' exists."
                     #-------------------------
                     logger.error(user_message)
                     #-------------------------
@@ -507,32 +564,66 @@ class PrinterCheckerApp(QWidget):
 
     # INPUT ERRORS
     # ------------------------
-    def show_empty_error_gif(self, excel_sheet_name):
+    def show_empty_error_gif(self):
+
         """
-        Show a different GIF if the user does not enter any text input in the text box.
+        PURPOSE
+        -------
+        Handles the user error scenario where the input field for the Excel sheet name
+        is left empty. It updates the GUI to display a specific error message and an
+        accompanying animated GIF to provide clear visual feedback. The function also
+        re-enables the main button, allowing the user to correct the mistake and re-submit.
+
+        
+        ARGUMENTS
+        ---------
+        None
+
+            
+        RETURN VALUE
+        ------------
+        None. The function modifies the GUI state and then exits; it does not return any value.
         """
-        if not excel_sheet_name:
+        
+        # Display an error message:
+        self.progress_indication_text_label.setText("ERROR: Dumbass, you forgot to \nenter the godamn sheet name.")
 
-            # Display an error message:
-            self.progress_indication_text_label.setText("ERROR: Dumbass, you forgot to \nenter the godamn sheet name.")
+        # Stop any GIF that might already be running
+        if self.movie and self.movie.state() == QMovie.Running:
+            self.movie.stop()
 
-            # Stop any GIF that might already be running
-            if self.movie and self.movie.state() == QMovie.Running:
-                self.movie.stop()
+            # Load your new GIF for the empty input error.
+            # Replace the current GIF with the actual path.
+            gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_error_empty.gif') # get the path for the GIF
+            self.movie = QMovie(gif_file)
+            self.progress_gif_label.setMovie(self.movie)
+            self.movie.start()
 
-                # Load your new GIF for the empty input error.
-                # Replace the current GIF with the actual path.
-                self.movie = QMovie('images/ultimate-printer-checker_error_empty.gif')
-                self.progress_gif_label.setMovie(self.movie)
-                self.movie.start()
+        # Re-enable the button, since the button's trigger process is not running yet
+        self.generate_report_and_update_tracker_button.setEnabled(True) 
+        return
 
-            # Re-enable the button, since the button's trigger process is not running yet
-            self.generate_report_and_update_tracker_button.setEnabled(True) 
-            return
+    def show_wrong_name_gif(self):
 
-    def show_wrong_name_gif(self, excel_sheet_name):
         """
-        Show a different GIF if the user enters an inexistent worksheet name.
+        PURPOSE
+        -------
+        Handles the user error scenario where the entered worksheet name does not exist
+        in the target Excel file. This method updates the GUI to display a specific error
+        message and a corresponding animated GIF, providing clear visual feedback for this
+        particular error. It also re-enables the main button, allowing the user to
+        correct the input and try again.
+
+        
+        ARGUMENTS
+        ---------
+        None
+
+        
+        RETURN VALUE
+        ------------
+        None. This function's sole role is to modify the GUI state; it does not return
+        any value.
         """
 
         # Display an error message:
@@ -544,7 +635,8 @@ class PrinterCheckerApp(QWidget):
 
             # Load your new GIF for the empty input error.
             # Replace the current GIF with the actual path.
-            self.movie = QMovie('images/ultimate-printer-checker_wrong_worksheet.gif')
+            gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_wrong_worksheet.gif') # get the path for the GIF
+            self.movie = QMovie(gif_file)
             self.progress_gif_label.setMovie(self.movie)
             self.movie.start()
 
@@ -556,9 +648,29 @@ class PrinterCheckerApp(QWidget):
     # EXCEL FILE OPEN OR NOT FOUND ERROR
     # ----------------------------------
     def show_excel_permission_denied_error_gif(self):
+
         """
-        Show a different GIF and error message when the EXCEL file is open
+        PURPOSE
+        -------
+        Handles the specific error scenario where a `PermissionError` is encountered,
+        which typically occurs when the script cannot access the Excel file because it is
+        open in another application. It updates the GUI to display a targeted error message
+        and an animated GIF, instructing the user to close the file. The function also
+        re-enables the main button, allowing the user to retry the operation once the
+        file is no longer in use.
+
+        
+        ARGUMENTS
+        ---------
+        None
+
+        
+        RETURN VALUE
+        ------------
+        None. The function modifies the GUI state and then exits; it does not return any value.
         """
+
+
         # Show the specific GIF for this:
         self.progress_indication_text_label.setStyleSheet("""
             QLabel#progress_indication_text_label{
@@ -575,7 +687,8 @@ class PrinterCheckerApp(QWidget):
 
             # Load your new GIF for the empty input error.
             # Replace the current GIF with the actual path.
-            self.movie = QMovie('images/ultimate-printer-checker_excel_file_error.gif')
+            gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_excel_file_error.gif') # get the path for the GIF
+            self.movie = QMovie(gif_file)
             self.progress_gif_label.setMovie(self.movie)
             self.movie.start()
 
@@ -584,8 +697,25 @@ class PrinterCheckerApp(QWidget):
         return
         
     def show_excel_file_not_found_error_gif(self):
+        
         """
-        Show a different GIF and error message when the EXCEL file not found
+        PURPOSE
+        -------
+        Handles the specific error scenario where the main Excel tracker file cannot be
+        found at its expected location. It updates the GUI to display a targeted error
+        message and an animated GIF, notifying the user that the file is missing. The
+        function also re-enables the main button, allowing the user to address the file
+        issue before attempting to run the process again.
+
+        
+        ARGUMENTS
+        ---------
+        None
+
+        
+        RETURN VALUE
+        ------------
+        None. The function modifies the GUI state and then exits; it does not return any value.
         """
 
         # Show the specific GIF for this:
@@ -604,7 +734,8 @@ class PrinterCheckerApp(QWidget):
 
             # Load your new GIF for the empty input error.
             # Replace the current GIF with the actual path.
-            self.movie = QMovie('images/ultimate-printer-checker_excel_file_error.gif')
+            gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_excel_file_error.gif') # get the path for the GIF
+            self.movie = QMovie(gif_file)
             self.progress_gif_label.setMovie(self.movie)
             self.movie.start()
 
@@ -616,10 +747,32 @@ class PrinterCheckerApp(QWidget):
     # INTRO DISPLAY
     # -------------
     def show_intro_gif(self):
+        """
+        PURPOSE
+        -------
+        Displays an introductory animated GIF when the application first launches. This
+        method creates the necessary `QLabel` to contain the animation, loads the specific
+        GIF file from the `images` directory, scales it to a predefined size, and starts
+        the animation loop. This serves as the initial visual element before the user
+        interacts with the application.
+
+        
+        ARGUMENTS
+        ---------
+        None
+
+        
+        RETURN VALUE
+        ------------
+        None. The function modifies the GUI by adding and displaying a new widget; it
+        does not return any value.
+        """
+
         # Create an empty QLabel for the GIF
         self.progress_gif_label = QLabel(self) 
         # Create a QMovie object with your GIF
-        self.movie = QMovie("images/ultimate-printer-checker_slap.gif")
+        gif_file = common_helper_functions.get_absolute_path('images/ultimate-printer-checker_slap.gif') # get the path for the GIF
+        self.movie = QMovie(gif_file)
         # Pre-scale the movie's frames to a specific size.
         self.movie.setScaledSize(QSize(350, 200))
         # Set the QMovie on the QLabel
@@ -631,47 +784,39 @@ class PrinterCheckerApp(QWidget):
     # BACKGROUND COLOR
     # ----------------
     def paintEvent(self, event):
+
         """
-        This special method is called whenever the window needs to be redrawn.
-        We override it to manually draw our tiled background image first.
+        PURPOSE
+        -------
+        Customizes the appearance of the main application window by drawing a tiled
+        background image. This method overrides a built-in Qt event handler that is
+        automatically called whenever the window's display needs to be updated. It uses
+        a `QPainter` to repeatedly draw a camouflage pattern image, ensuring the entire
+        background of the window is covered.
 
-        A paintEvent is a specific type of event. PyQt sends this event to our widget 
-        whenever it determines that the widget needs to be redrawn. This happens:
+        
+        ARGUMENTS
+        ---------
+        event (QPaintEvent): The paint event object passed by the Qt framework, containing
+        details about the region that needs to be repainted.
 
-        - On First Show: The very first time window.show() is called, a paintEvent is 
-        triggered to draw the window and all its contents for the first time.
-
-        - On Resize: If the user grabs the corner of the window and resizes it, the area 
-        needs to be redrawn, so a paintEvent is sent.
-
-        - On Uncover: If the window was previously hidden behind another window and is now 
-        brought to the front, the newly visible parts must be redrawn, triggering a paintEvent.
-
-        - On Programmatic Update: If you call widget.update() or widget.repaint() in your code, 
-        you are manually telling PyQt, "This widget's appearance has changed, please schedule a 
-        paintEvent for it as soon as you can."
+            
+        RETURN VALUE
+        ------------
+        None. This method performs drawing operations directly on the widget and does not
+        return a value.
         """
+        
         # Create a QPainter object, which is used for all drawing operations.
         painter = QPainter(self)
 
         # Load our camouflage image into a QPixmap object.
         # A QPixmap is an optimized object for displaying images on screen.
-        pixmap = QPixmap("images/camo_light.png") # Use the larger pattern image
+        background_image_file = common_helper_functions.get_absolute_path('images/camo_light.png') # get the path for the GIF
+        pixmap = QPixmap(background_image_file) # Use the larger pattern image
 
         # Use drawTiledPixmap to repeat the image across the entire window area (self.rect()).
         painter.drawTiledPixmap(self.rect(), pixmap)
-
-
-    # GET A FILE'S ABSOLUTE PATH
-    # --------------------------
-    def get_base_path(self):
-        """Gets the base path for the application, whether running as a script or frozen."""
-        if getattr(sys, 'frozen', False):
-            # If the application is run as a bundle (e.g., by PyInstaller)
-            return os.path.dirname(sys.executable)
-        else:
-            # If running as a normal .py script
-            return os.path.dirname(os.path.abspath(__file__))
 
 
 # This class will manage the asynchronous task part of the GUI functionality.
@@ -703,6 +848,27 @@ class Worker(QObject):
     # CONSTRUCTOR
     # -----------
     def __init__(self, excel_sheet_name: str):
+         
+        """
+        PURPOSE
+        -------
+        Initializes a new `Worker` object. As the constructor, its primary role is to
+        store the specific `excel_sheet_name` that this worker instance will be responsible
+        for processing. This ensures that when the background task is started, the worker
+        has the necessary information to perform its job.
+
+        
+        ARGUMENTS
+        ---------
+        excel_sheet_name (str): The name of the Excel worksheet that this worker is assigned to process.
+
+            
+        RETURN VALUE
+        ------------
+        None. This is a constructor and does not return any value; it configures the
+        newly created `Worker` instance.
+        """
+         
         super().__init__()
         # Store the sheet name safely when the worker is created.
         self.excel_sheet_name = excel_sheet_name
@@ -711,7 +877,29 @@ class Worker(QObject):
     # EXECUTE THE ASYNC PROGRAM
     # -------------------------
     def run(self):
-        """Executes the asynchronous main program."""
+
+        """
+        PURPOSE
+        -------
+        Serves as the main execution entry point for the background worker thread. This method
+        invokes the primary asynchronous function (`run_main_program`), passing it the necessary
+        Excel sheet name. It establishes a callback mechanism to relay progress updates back
+        to the main GUI thread via the `progress_percent` signal. Upon successful completion,
+        it emits the `finished` signal. If any exception occurs during execution, it logs the
+        error, creates a user-friendly message, and emits the `error` signal with that message.
+
+        
+        ARGUMENTS
+        ---------
+        None
+
+        
+        RETURN VALUE
+        ------------
+        None. The outcome of the operation is communicated asynchronously through the
+        `finished` and `error` signals.
+        """
+        
         try:
             self.progress.emit("Running,\nwait you impatient fuck...")
 

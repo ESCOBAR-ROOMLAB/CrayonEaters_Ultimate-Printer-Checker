@@ -8,13 +8,13 @@ import seaborn as sns
 # For operations with the DataFrame
 import pandas as pd
 
-# Import the os module to handle file paths
-import os
+# This module will provide us useful helper functions
+import common_helper_functions
 
-# Import the logging module to be able to log errors and execution output
+# This module allows us to log errors and execution output
 import logging
 
-# Import the Rotating File Handler to rotate the logging file
+# This module allows us to rotate the logging file
 from logging.handlers import RotatingFileHandler
 
 ########################################################################################################################################
@@ -24,45 +24,54 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
+log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
 # backupCount=0: When the file is full, delete it and start a new one.
 handler = RotatingFileHandler(
-    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+    log_file_path, maxBytes=5*1024*1024, backupCount=0
 )
-
-handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
 
 # Format the logs and set it for the HANDLER
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
-handler.setFormatter(formatter) 
+handler.setFormatter(formatter)
 
-logger.addHandler(handler) # add the formatted HANDLER to the logger
+# Add the formatted HANDLER to the logger
+logger.addHandler(handler)
 
-#########################################################################################################################################
+########################################################################################################################################
 
+# GENERATE PLOTS
+# --------------
 def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status_column_name):
 
     """
-    PURPOSE:
-    
-    This function generates a bar plot that represents the number of printers online / offline per base, to identify at a high level
-    any network issues with the assets.
+    PURPOSE
+    -------
+    Generates a bar chart that visually represents the number of 'Online' and 'Offline'
+    printers for each base location. This provides a high-level overview of network
+    health across different sites. The function uses seaborn and matplotlib to create
+    the plot, adds numerical labels on top of each bar for exact counts, and saves the
+    final chart as an image file.
 
     
-    ARGUMENTS:
+    ARGUMENTS
+    ---------
+    printers_dataframe (pd.DataFrame): The DataFrame containing the printer data. It must include 
+    the columns specified by the other arguments.
 
-    printers_dataframe = the name of the DataFrame containing all the printer information. It should be a string.
+    base_code_column_name (str): The name of the column in the DataFrame that contains the base location codes.
 
-    status_column_name = the name of the column with the status values. It should be a string.
+    status_column_name (str): The name of the column in the DataFrame that contains the 'Online' or 'Offline' 
+    status for each printer.
 
-    base_code_column_name = the name of the column with the Base Code values. It should be a string.
-
-    
-    RETURN VALUE:
-    
-    The function saves the bar plot as an image in PNG, to be later imported to the final report.
-    
+        
+    RETURN VALUE
+    ------------
+    Returns the absolute file path (str) to the newly created PNG image of the bar
+    chart. This path can then be used to embed the image in other documents, such as
+    an HTML report.
     """
      
     ### <=== BAR CHART GENERATION (with numerical labels) ===> ###
@@ -72,8 +81,7 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
     # Create the figure and axes objects
     fig, ax = plt.subplots(figsize=chart_figsize)
 
-    # --- Your existing bar chart plotting code ---
-    # We'll use the same seaborn example as before
+    # We'll use the seaborn
     sns.countplot(
         data=printers_dataframe, 
         x=str(base_code_column_name), 
@@ -94,14 +102,13 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
         
         # The 'annotate' function places text on the plot
         ax.annotate(
-            f'{int(height)}', # The text to display (as an integer)
-            (p.get_x() + p.get_width() / 2., height), # The (x, y) coordinate to place the text
-            ha='center',        # Horizontal alignment: center
-            va='center',        # Vertical alignment: center
-            xytext=(0, 5),      # Offset the text 5 points vertically
-            textcoords='offset points' # Use an offset in points
+            f'{int(height)}',                           # The text to display (as an integer)
+            (p.get_x() + p.get_width() / 2., height),   # The (x, y) coordinate to place the text
+            ha='center',                                # Horizontal alignment: center
+            va='center',                                # Vertical alignment: center
+            xytext=(0, 5),                              # Offset the text 5 points vertically
+            textcoords='offset points'                  # Use an offset in points
         )
-    # ---------------------------------------------------------
 
     # Set labels on the 'ax' object
     ax.set_xlabel('Base Code')
@@ -110,46 +117,47 @@ def generate_printer_bar_chart(printers_dataframe, base_code_column_name, status
 
     # Let Matplotlib automatically calculate the tightest layout to fill the figure
     fig.tight_layout(pad=0.5)
-    
-    ### <=== SET THE OUTPUT FOLDER ===> ###
-    output_folder = "images"
 
     ### <=== SAVE THE FILE AND CLOSE ===> ###
     # Save the figure object
-    bar_chart_file_name = 'printer_status_by_base_code_bar-chart.png'
-    full_save_path = os.path.join(output_folder, bar_chart_file_name)
-    fig.savefig(full_save_path, bbox_inches='tight', dpi=300)
+    bar_chart_file_path = common_helper_functions.get_absolute_path('images/printer_status_by_base_code_bar-chart.png')
+    fig.savefig(bar_chart_file_path, bbox_inches='tight', dpi=300)
 
     # Close the plot
     plt.close(fig)
 
-    #----------------------------------------------------------------------------------
-    logger.info(f"Bar chart with labels successfully saved in path '{full_save_path}'")
-    #----------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------------
+    logger.info(f"Bar chart with labels successfully saved in path '{bar_chart_file_path}'")
+    #---------------------------------------------------------------------------------------
 
-    return full_save_path
+    # Return the absolute file path for the plot
+    return bar_chart_file_path
 
 
 def generate_printer_pie_chart(printers_dataframe, status_column_value):
 
 
     """
-    PURPOSE:
-    
-    This function generates a pie plot that represents the percentage and number of printers online / offline in total, across all bases.
+    PURPOSE
+    -------
+    Generates a pie chart that displays the overall distribution of 'Online' versus
+    'Offline' printers across all sites. The chart shows both the absolute number of
+    printers and their corresponding percentage of the total. The function uses a
+    custom color map to ensure consistent coloring and saves the resulting chart as a
+    high-resolution PNG image file.
 
     
-    ARGUMENTS:
-
-    printers_dataframe = the name of the DataFrame containing all the printer information. It should be a string.
-
-    status_column_name = the name of the column with the status values. It should be a string.
-
+    ARGUMENTS
+    ---------
+    printers_dataframe (pd.DataFrame): The DataFrame containing the printer data, which must include the status column.
     
-    RETURN VALUE:
-    
-    The function saves the pie plot as an image in PNG, to be later imported to the final report.
-    
+    status_column_value (str): The name of the column in the DataFrame that holds the 'Online' or 'Offline' status for each printer.
+
+        
+    RETURN VALUE
+    ------------
+    Returns the absolute file path (str) to the newly created PNG image of the pie
+    chart. This path can be used to embed the image into other reports or documents.
     """
 
     # Define a standard size for all report charts
@@ -172,10 +180,35 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
     ordered_colors = [color_map.get(label, '#bdc3c7') for label in status_counts.index] #The '#bdc3c7' is a neutral grey fallback for any unexpected status.
 
     def make_autopct(values):
+        """
+        This is a "function factory". Its only job is to create and return
+        another function that is configured to format the labels on a pie chart.
+        This pattern (a function inside a function) is called a closure.
+        """
+
+        # Define the inner function that will actually be used by Matplotlib.
+        # This inner function will have access to the 'values' variable from its parent.
         def my_autopct(pct):
+            """
+            This is the actual labeling function that Matplotlib will call for each slice.
+            Matplotlib provides the percentage of the slice as the 'pct' argument.
+            """
+
+            # Calculate the total sum of all the pie slices.
+            # It can see the 'values' variable from the outer function's scope.
             total = sum(values)
+
+            # Calculate the absolute number (the raw count) for this specific slice
+            # by converting the percentage back from the total.
             val = int(round(pct * total / 100.0))
-            return f'{val}\n({pct:.1f}%)'
+
+            # Create and return the final formatted string to be displayed on the slice.
+            # It includes the absolute number and the percentage on a new line.
+            # For example: "15\n(75.0%)"
+            return f'{val}\\n({pct:.1f}%)'
+
+        # The outer function returns the inner function itself.
+        # This returned function is now "primed" and ready for Matplotlib to use.
         return my_autopct
 
     # Draw the pie chart on the 'ax' object, not using 'plt'
@@ -194,20 +227,16 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
     # This command ensures the pie is drawn as a circle, but now it's contained within the subplot, not dominating the whole figure.
     ax.axis('equal') 
 
-    ### <=== SET THE OUTPUT FOLDER ===> ###
-    output_folder = "images"
-
     ### <=== SAVE THE FILE AND CLOSE ===> ###
     # Save the figure object
-    pie_chart_file_name = 'printer_status_pie-chart.png'
-    full_save_path = os.path.join(output_folder, pie_chart_file_name)
-    fig.savefig(full_save_path, bbox_inches='tight', dpi=300)
+    pie_chart_file_path = common_helper_functions.get_absolute_path('images/printer_status_pie-chart.png')
+    fig.savefig(pie_chart_file_path, bbox_inches='tight', dpi=300)
 
     # Close the plot
     plt.close(fig)
 
-    #----------------------------------------------------------------------
-    logger.info(f"Pie chart successfully saved in path '{full_save_path}'")
-    #----------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    logger.info(f"Pie chart successfully saved in path '{pie_chart_file_path}'")
+    #---------------------------------------------------------------------------
 
-    return full_save_path
+    return pie_chart_file_path

@@ -12,16 +12,16 @@ documentation/objectives_and_pending_fixes.txt
 execution_logs.log
 
 # --- Code Explanations ---
-code_explanations/
+code_explanations/*
 
 
 # --- Images ---
-images/
+images/*
 
 
 # --- Python Cache ---
 # Ignore Python's cache directory
-__pycache__/
+__pycache__/*
 
 
 # --- PyInstaller Files ---

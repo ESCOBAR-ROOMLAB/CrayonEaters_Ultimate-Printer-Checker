@@ -1,0 +1,35 @@
+PROJECT FILE STRUCTURE
+----------------------
+/Project_Folder/
+│
+├── 📂 program_gui.py
+│   └── (Entry Point) Creates the PyQt5 GUI, handles user interaction, and starts the background process.
+│
+├── 📂 main_program.py
+│   └── (Orchestrator) Contains the main async function that calls all other modules in sequence.
+│
+├── 📂 printer_network_checks_async.py
+│   └── (Network Module) Performs the high-speed, concurrent pinging of devices.
+│
+├── 📂 printers_data_ops.py
+│   └── (Data I/O Module) Handles reading and writing to the Excel file, including closing it.
+│
+├── 📂 printer_plots.py
+│   └── (Plotting Module) Generates the pie and bar charts using Matplotlib.
+│
+├── 📂 printer_report_craft.py
+│   └── (Reporting Module) Builds the final HTML report file.
+│
+├── 📂 common_helper_functions.py
+│   └── (Utilities) Provides shared functions, like getting the correct file paths.
+│
+├── 📄 Printer_Fleet_Table.xlsx
+│   └── (Input/Output Data) The master spreadsheet that is read from and updated.
+│
+├── 📄 Weekly_Printer_Report.html
+│   └── (Output) The final generated HTML report.
+│
+└── 📄 *.png
+    └── (Output) The generated chart image files.
+
+

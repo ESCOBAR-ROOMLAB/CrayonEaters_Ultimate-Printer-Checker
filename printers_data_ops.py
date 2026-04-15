@@ -3,7 +3,6 @@ import pandas as pd # type: ignore
 
 # Use openpyxl to load the existing Printer_Fleet_Table.xlsx into memory, keeping all your colors and rules.
 from openpyxl import load_workbook # type: ignore
-from openpyxl.utils.dataframe import dataframe_to_rows # type: ignore
 
 # Library for interacting with system processes
 import psutil # type: ignore
@@ -14,10 +13,13 @@ import os
 # Provides a way to open files in a web browser.
 import webbrowser 
 
-# Import the logging module to be able to log errors and execution output
+# This module will provide us useful helper functions
+import common_helper_functions
+
+# This module allows us to log errors and execution output
 import logging
 
-# Import the Rotating File Handler to rotate the logging file
+# This module allows us to rotate the logging file
 from logging.handlers import RotatingFileHandler
 
 ########################################################################################################################################
@@ -27,43 +29,46 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
+log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
 # backupCount=0: When the file is full, delete it and start a new one.
 handler = RotatingFileHandler(
-    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+    log_file_path, maxBytes=5*1024*1024, backupCount=0
 )
-
-handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
 
 # Format the logs and set it for the HANDLER
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
-handler.setFormatter(formatter) 
+handler.setFormatter(formatter)
 
-logger.addHandler(handler) # add the formatted HANDLER to the logger
+# Add the formatted HANDLER to the logger
+logger.addHandler(handler)
 
-#########################################################################################################################################
+########################################################################################################################################
 
 # CREATE DATAFRAME
 # ----------------
 def create_printers_dataframe(excel_file, excel_sheet_name):
 
     """
-    PURPOSE:
-
+    PURPOSE
+    -------
     This function reads a specific sheet from the 'Printer_Fleet_Table.xlsx' file
     into a pandas DataFrame. It also validates that the file exists and that
     it contains an 'IP Address' column before returning the data.
 
-    ARGUMENTS:
-
+    
+    ARGUMENTS
+    ---------
     excel_file = the absolute path of the EXCEl file
 
     excel_sheet_name = the name of the sheet inside the Excel file from which to
     read the printer data. It should be a string.
 
-    RETURN VALUE:
-
+    
+    RETURN VALUE
+    ------------
     On success, the function returns a pandas DataFrame containing all the data
     from the specified Excel sheet. If the file is not found or the 'IP Address'
     column is missing, the function will print an error message and terminate
@@ -101,17 +106,19 @@ def create_printers_dataframe(excel_file, excel_sheet_name):
 # UPDATE THE STATUS COLUMN
 # ------------------------
 def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
+   
     """
-    PURPOSE:
-
+    PURPOSE
+    -------
     This function updates an existing Excel file ('Printer_Fleet_Table.xlsx') with
     new status data from a pandas DataFrame, while carefully preserving all existing
     formatting like colors, conditional rules, and column widths. It uses the
     openpyxl library to load the workbook, find or create a 'Status' column,
     write the new data cell by cell, and then save the changes.
 
-    ARGUMENTS:
-
+    
+    ARGUMENTS
+    ---------
     excel_file = the absolute path of the EXCEl file
 
     excel_sheet_name = the name of the sheet within the Excel workbook that needs to be updated. 
@@ -120,14 +127,16 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
     all_printers_df  = the pandas DataFrame containing the full dataset, including
     the 'Status' column with the updated online/offline values that will be written to the file.
 
-    RETURN VALUE:
-
+    
+    RETURN VALUE
+    ------------
     This function does not return any value. Its primary effect is modifying the
     'Printer_Fleet_Table.xlsx' file by adding or updating the 'Status' column.
     It also prints messages to the console indicating the progress and the final
     success or failure of the operation.
 
     """
+
     # Initialize workbook to None before the try block. This is needed so if the user has the EXCEL file open and the program
     # cannot open it, then the "finally" block can execute anyways instead of crashing due to an invalid "workbook" variable.
     workbook = None 
@@ -154,7 +163,7 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
             worksheet.cell(row=index, column=status_col_index, value=status)
         
         # Save the workbook
-        workbook.save('Printer_Fleet_Table.xlsx')
+        workbook.save(excel_file)
         #-------------------------------------------------------------------------------------------
         logger.info(f"Successfully updated 'Printer_Fleet_Table.xlsx' while preserving its format.")
         #-------------------------------------------------------------------------------------------
@@ -191,27 +200,29 @@ def update_excel_table_status(excel_file, excel_sheet_name, all_printers_df):
 def close_excel_file_if_open(excel_file):
 
     """
-    PURPOSE:
-
+    PURPOSE
+    -------
     This function robustly checks all running system processes to see if the
     specified Excel file is currently open in any instance of Microsoft Excel.
     If it finds the file open, it forcefully terminates that specific Excel
     process to prevent file access errors ('Permission Denied') later in the
     script. This action is automated and requires no user input.
 
-    ARGUMENTS:
-
+    
+    ARGUMENTS
+    ---------
     excel_file = The file path of the Excel workbook to check for. It should be
     a string (e.g., 'Printer_Fleet_Table.xlsx').
 
-    RETURN VALUE:
-
+    
+    RETURN VALUE
+    ------------
     This function does not return any value. Its primary effect is terminating
     a process if necessary. It also prints messages to the console indicating
     whether the file was found open and if a process was closed.
-
     """
 
+    # Retrieve the absolute path for the EXCEL file to close
     file_name_to_check = os.path.basename(excel_file)
     process_found_and_killed = False
     
@@ -248,8 +259,9 @@ def close_excel_file_if_open(excel_file):
 
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # These exceptions happen if a process terminates while we are checking it. It's safe to ignore.
-            #-----------------------------------------------
+            #----------------------------------------------------------------------------------------------------
             logger.warning("The EXCEL file was opened and its process terminated while checking if it was open.")
+            #----------------------------------------------------------------------------------------------------
             continue
             
     if not process_found_and_killed:
@@ -261,28 +273,30 @@ def close_excel_file_if_open(excel_file):
 # OPEN THE EXCEL AND REPORT FILES
 # -------------------------------
 def open_output_files(excel_file, report_file):
+    
     """
-    PURPOSE:
-
+    PURPOSE
+    -------
     This function automatically opens the two final output files for immediate
     user review. It opens the generated HTML report in the default web browser
     and the updated Excel workbook in its default application (e.g., Microsoft
     Excel). It is designed to work on the Windows operating system.
 
-    ARGUMENTS:
-
+    
+    ARGUMENTS
+    ---------
     excel_file  = The file path of the Excel workbook that was updated.
     It should be a string.
     
     report_file = The file path of the HTML report that was generated.
     It should be a string.
 
-    RETURN VALUE:
-
+    
+    RETURN VALUE
+    ------------
     This function does not return any value. Its primary effect is launching
     external applications to open the specified files. It also prints messages
     to the console indicating its actions or any errors encountered.
-
     """
 
     #-----------------------------------------------------------------------------
@@ -290,20 +304,16 @@ def open_output_files(excel_file, report_file):
     #-----------------------------------------------------------------------------
     
     try:
-        # Get the full, absolute path to the files for reliability.
-        report_path_abs = os.path.abspath(report_file)
-        excel_path_abs = os.path.abspath(excel_file)
-
         # Open the HTML report in a new tab in the default web browser.
-        webbrowser.open_new_tab('file://' + report_path_abs)
+        webbrowser.open_new_tab('file://' + report_file)
         
         # Open the Excel file using the default application.
         # os.startfile() is a Windows-specific command.
-        os.startfile(excel_path_abs)
+        os.startfile(excel_file)
 
-        #-----------------------------------------------------------------------------
+        #-------------------------------------------------
         logger.info("Files have been opened successfully")
-        #-----------------------------------------------------------------------------
+        #-------------------------------------------------
         
     except FileNotFoundError as e:
         #-----------------------------------------------------------------------------------------------------

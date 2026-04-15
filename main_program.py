@@ -13,16 +13,13 @@ import printer_network_checks_async # type: ignore
 # This module allows us to run asynchronous tasks
 import asyncio
 
-# This module will help us retrieve the absolute path for the files that we operate in the program
-import os
+# This module will provide us useful helper functions
+import common_helper_functions
 
-# This module will let the program itself determine if is being run as a bundle or as a script
-import sys
-
-# Import the logging module to be able to log errors and execution output
+# This module allows us to log errors and execution output
 import logging
 
-# Import the Rotating File Handler to rotate the logging file
+# This module allows us to rotate the logging file
 from logging.handlers import RotatingFileHandler
 
 ########################################################################################################################################
@@ -32,50 +29,63 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
+log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
 # backupCount=0: When the file is full, delete it and start a new one.
 handler = RotatingFileHandler(
-    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+    log_file_path, maxBytes=5*1024*1024, backupCount=0
 )
-
-handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
 
 # Format the logs and set it for the HANDLER
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
-handler.setFormatter(formatter) 
+handler.setFormatter(formatter)
 
-logger.addHandler(handler) # add the formatted HANDLER to the logger
+# Add the formatted HANDLER to the logger
+logger.addHandler(handler)
 
-#########################################################################################################################################
+########################################################################################################################################
 
-# HELPER FUNCTION: GET THE RIGHT PATH FOR FILES
-# ---------------------------------------------
-def get_base_path():
-    """Gets the base path for the application, whether running as a script or frozen."""
-    if getattr(sys, 'frozen', False):
-        # If the application is run as a bundle (e.g., by PyInstaller)
-        return os.path.dirname(sys.executable)
-    else:
-        # If running as a normal .py script
-        return os.path.dirname(os.path.abspath(__file__))
-    
- 
 # RUN CHECK AND GENERATE UPDATES AND REPORTS
 # ------------------------------------------
 async def main(excel_sheet_name, progress_callback=None):
 
+    """
+    PURPOSE
+    -------
+    Orchestrates the complete process of checking printer statuses and generating a comprehensive report.
+    This includes reading printer data from an Excel worksheet, performing network pings to determine
+    online/offline status, updating the Excel tracker, generating visual charts, and compiling
+    all information into an HTML report for user review.
 
-    ### <=== USER WARNING ===> ### Correct this and print an error message on the GUI when document is open
+    
+    ARGUMENTS
+    ---------
+    excel_sheet_name (str): The specific name of the worksheet within 'Printer_Fleet_Table.xlsx' from which printer data will be extracted 
+    for processing.
+
+    progress_callback (callable, optional): An optional function used to communicate the current progress of the network checks back to 
+    the caller (e.g., for GUI updates). It should accept a single integer argument representing the percentage completed. Defaults to None 
+    if no progress updates are required.
+
+        
+    RETURN VALUE
+    ------------
+    None. This function primarily performs side effects: updating an Excel file, generating image files, creating an HTML report, and opening 
+    these files for the user. It does not explicitly return any value.
+    """
+
+    ### <=== USER WARNING ===> ### 
     # We need to warn the user before continuing running the program to close the EXCEL file, if open:
     #--------------------------------------------------------------------
     logger.info(f"Starting main program for sheet: '{excel_sheet_name}'")
     #--------------------------------------------------------------------
 
+
     ### <=== GET THE FILE PATHS ===> ###
-    BASE_PATH = get_base_path()
-    excel_file = os.path.join(BASE_PATH, 'Printer_Fleet_Table.xlsx')
-    report_file = os.path.join(BASE_PATH, 'Printer_Report.html')
+    excel_file = common_helper_functions.get_absolute_path('Printer_Fleet_Table.xlsx')
+    report_file = common_helper_functions.get_absolute_path('Printer_Report.html')
     #-------------------------------------------------------------
     logger.info(f"Retrieving the EXCEL file path: '{excel_file}'")
     logger.info(f"Retrieving the HTML file path: '{report_file}'")
@@ -108,7 +118,6 @@ async def main(excel_sheet_name, progress_callback=None):
     #-----------------------------------------
     status_dict = await printer_network_checks_async.ping_printers_async(
         all_printers_df,
-        "IP Address",
         progress_callback=progress_callback # Pass it down
     )
     
@@ -158,10 +167,10 @@ async def main(excel_sheet_name, progress_callback=None):
 
 
     ### <=== GENERATE THE HTML REPORT ===> ###
-    #----------------------------------------------
+    #-----------------------------------------
     logger.info("Generating the HTML Report.")
-    #----------------------------------------------
-    printer_report_craft.generate_printer_report_in_html(excel_sheet_name, all_printers_df, pie_chart_file_name, bar_chart_file_name)
+    #-----------------------------------------
+    printer_report_craft.generate_printer_report_in_html(report_file, excel_sheet_name, all_printers_df, pie_chart_file_name, bar_chart_file_name)
     
     # Now we can open it
     printers_data_ops.open_output_files(excel_file, report_file)

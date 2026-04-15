@@ -1,0 +1,70 @@
+[ Starts with User Action ]
+  |
+  V
+1. GUI Interaction (`program_gui.py`)
+   |
+   +--> User clicks "Run Program" button in the `PrinterCheckerApp` window.
+   |
+   +--> The `run_check()` method is called.
+   |    |
+   |    +--> Creates a background `QThread`.
+   |    |
+   |    +--> Creates a `Worker` object.
+   |    |
+   |    +--> Moves the `Worker` to the background thread.
+   |    |
+   |    +--> Starts the thread, which triggers the `Worker.run()` method.
+   |
+   V
+2. Background Task Delegation (`program_gui.py` -> `main_program.py`)
+   |
+   +--> The `Worker.run()` method executes its single command:
+   |    `asyncio.run(run_main_program(...))`
+   |
+   V
+3. Main Program Orchestration (`main_program.py`)
+   |
+   +--> The `run_main_program()` function now takes control and executes the following sequence:
+   |
+   |    a. Calls `close_excel_file_if_open()` from `printers_data_ops.py`.
+   |       |
+   |       +--> Interacts with system processes to close `EXCEL.EXE` if needed.
+   |
+   |    b. Calls `create_printers_dataframe()` from `printers_data_ops.py`.
+   |       |
+   |       +--> Reads data from `Printer_Fleet_Table.xlsx`.
+   |
+   |    c. `await`s `ping_printers_async()` from `printer_network_checks_async.py`.
+   |       |
+   |       +--> Performs high-speed, concurrent pinging of all IP addresses.
+   |
+   |    d. Calls `update_excel_table_status()` from `printers_data_ops.py`.
+   |       |
+   |       +--> Writes the new 'Status' column back to `Printer_Fleet_Table.xlsx`.
+   |
+   |    e. Calls plotting functions from `printer_plots.py`.
+   |       |
+   |       +--> Creates `printer_status_pie-chart.png`.
+   |       +--> Creates `printer_status_by_base_code_bar-chart.png`.
+   |
+   |    f. Calls `generate_printer_report_in_html()` from `printer_report_craft.py`.
+   |       |
+   |       +--> Creates `Weekly_Printer_Report.html`.
+   |
+   |    g. Calls `open_output_files()` from `common_helper_functions.py`.
+   |       |
+   |       +--> Opens the newly created HTML report in a browser.
+   |       +--> Opens the updated `Printer_Fleet_Table.xlsx`.
+   |
+   V
+4. Completion and UI Feedback (`program_gui.py`)
+   |
+   +--> Once `run_main_program()` finishes, the `Worker` emits the `finished` signal.
+   |
+   +--> The `PrinterCheckerApp` receives this signal and calls the `report_finished()` method.
+        |
+        +--> The status label is updated to "Process complete!".
+        |
+        +--> The "Run Program" button is re-enabled.
+
+[ Ends with UI updated and output files opened ]

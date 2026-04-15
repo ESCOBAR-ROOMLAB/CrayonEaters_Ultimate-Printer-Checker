@@ -114,21 +114,3 @@ TO BE WRITTEN WHEN FINISH PYINSTALLER
     *   Enter the exact name of the sheet containing your printer data into the input box.
     *   Click the **"I'm feeling complacient"** button.
     *   The application will show progress updates. Once complete, it will automatically open the updated `Printer_Fleet_Table.xlsx` and the 	`Printer_Report.html`.
-
-
-## Project Structure
-
-.
-├── images/ # Contains GIFs for the UI
-│ ├── ultimate-printer-checker_error_empty.gif
-│ ├── ultimate-printer-checker_running.gif
-│ └── ultimate-printer-checker_slap.gif
-├── main_program.py # Orchestrates the entire workflow
-├── printer_network_checks_async.py # Core logic for asynchronous pinging
-├── printer_plots.py # Generates pie and bar charts
-├── printer_report_craft.py # Builds the final HTML report
-├── printers_data_ops.py # Handles all file I/O (read/write Excel)
-├── program_gui.py # Main entry point, builds the GUI
-├── Printer_Fleet_Table.xlsx # Input data file with printer information
-├── Printer_Report.html # Example of the generated output report
-└── README.md # This file

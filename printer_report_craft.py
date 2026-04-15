@@ -1,13 +1,16 @@
 # Used to encode and decode binary data (like images) into ASCII text format.
 import base64
 
-# Import the logging module to be able to log errors and execution output
-import logging
-
 # We need this one to be able to query the current date and store it in a variable.
 from datetime import date
 
-# Import the Rotating File Handler to rotate the logging file
+# This module will provide us useful helper functions
+import common_helper_functions
+
+# This module allows us to log errors and execution output
+import logging
+
+# This module allows us to rotate the logging file
 from logging.handlers import RotatingFileHandler
 
 ########################################################################################################################################
@@ -17,49 +20,57 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
+log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
 # backupCount=0: When the file is full, delete it and start a new one.
 handler = RotatingFileHandler(
-    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+    log_file_path, maxBytes=5*1024*1024, backupCount=0
 )
-
-handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
 
 # Format the logs and set it for the HANDLER
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
-handler.setFormatter(formatter) 
+handler.setFormatter(formatter)
 
-logger.addHandler(handler) # add the formatted HANDLER to the logger
+# Add the formatted HANDLER to the logger
+logger.addHandler(handler)
 
-
-#########################################################################################################################################
+########################################################################################################################################
 
 # GENERATE HTML REPORT
 # --------------------
-def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_chart_image, bar_chart_image):
+def generate_printer_report_in_html(report_file, excel_sheet_name, printers_dataframe, pie_chart_image, bar_chart_image):
 
     """
-    PURPOSE:
-    
-    This function generates the printer report in HTML.
+    PURPOSE
+    -------
+    Generates a complete, self-contained HTML report detailing the printer fleet status.
+    This function takes a DataFrame and chart images, converts the images to Base64
+    to embed them directly into the HTML, and formats the data into structured, styled
+    sections. It creates dedicated sections for "Offline Printers" and "Special Notes,"
+    grouping the data by base code for improved readability. The final HTML string,
+    complete with CSS styling, is then written to a local file.
 
     
-    ARGUMENTS:
+    ARGUMENTS
+    ---------
+    report_file (str): The file path where the generated HTML report will be saved.
 
-    excel_sheet_name = the name of the exercise / location of the printer fleet.
+    excel_sheet_name (str): The name of the exercise or location, which is used as the
+    main title for the report.
+    printers_dataframe (pd.DataFrame): The DataFrame containing all the printer information,
+    including status, hostname, and special notes.
 
-    printers_dataframe = the name of the DataFrame containing all the printer information. It should be a string.
+    pie_chart_image (str): The file path to the PNG image of the status pie chart.
 
-    pie_chart_image = the name of the PNG image that contains the PIE CHART of the printer status.
+    bar_chart_image (str): The file path to the PNG image of the status bar chart.
 
-    bar_chart_image = the name of the PNG image that contains the BAR CHART of the printer status per base code.
-
-
-    RETURN VALUE:
     
-    The function creates an HTML report and saves it locally, adding the current date to the title.
-    
+    RETURN VALUE
+    ------------
+    None. The function's primary outcome is the creation and saving of the HTML report
+    file to the specified path.
     """
         
     # Get the current date and store it in a variable
@@ -76,16 +87,20 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     try:
         pie_chart_base64 = image_to_base64_string(pie_chart_image)
         bar_plot_base64 = image_to_base64_string(bar_chart_image)
+        #--------------------------------------------------------
         logger.info("Plot images have been successfully encoded")
+        #--------------------------------------------------------
     except FileNotFoundError as e:
+        #------------------------------------------------------------------------------------------------------------------------------------------
         logger.error(f"Encoding plot images failed: Could not find an image file. Make sure your script is in the same folder as your PNG images.")
         logger.error(f"Encoding plot images failed: File not found: {e.filename}")
+        #------------------------------------------------------------------------------------------------------------------------------------------
         exit() # Stop the script if an image is missing
 
    
     # First, lets define some of the text we will include in the report. In this case, we want to specify the reason why the printers 
     # whose status is Offline and have a Special Note are not reachable in the network. Some printers may have a Special  Note inputted 
-    # on the 'printers_data' dictionary. Also, we want to include a section listing the Offline printers by site / base.
+    # on the EXCEL tracker. Also, we want to include a section listing the Offline printers by site / base.
 
     ### <=== FILTER FOR ROWS THAT HAVE A SPECIAL NOTE ===> ###
     printers_with_notes = printers_dataframe[printers_dataframe['Special Notes'].notna()].copy()
@@ -292,11 +307,11 @@ def generate_printer_report_in_html(excel_sheet_name, printers_dataframe, pie_ch
     </html>
     """
 
-    # --- Write the HTML content to a file ---
-    file_name = 'Printer_Report.html'
+    # Write the HTML content to a file
+    file_name = report_file
     with open(file_name, 'w') as f:
         f.write(html_content)
 
-    #-------------------------------------------------------------------------
+    #-----------------------------------------------------------------------
     logger.info(f"Report successfully generated and saved as '{file_name}'")
-    #-------------------------------------------------------------------------
+    #-----------------------------------------------------------------------

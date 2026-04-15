@@ -8,10 +8,13 @@ import platform
 # or not by analyzing the text output of each PING subprocess.
 import re
 
-# Import the logging module to be able to log errors and execution output
+# This module will provide us useful helper functions
+import common_helper_functions
+
+# This module allows us to log errors and execution output
 import logging
 
-# Import the Rotating File Handler to rotate the logging file
+# This module allows us to rotate the logging file
 from logging.handlers import RotatingFileHandler
 
 ########################################################################################################################################
@@ -21,31 +24,53 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
+log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
 # backupCount=0: When the file is full, delete it and start a new one.
 handler = RotatingFileHandler(
-    'execution_logs.log', maxBytes=5*1024*1024, backupCount=0
+    log_file_path, maxBytes=5*1024*1024, backupCount=0
 )
-
-handler = logging.FileHandler('execution_logs.log') # save the logs to an output file
 
 # Format the logs and set it for the HANDLER
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s") 
-handler.setFormatter(formatter) 
+handler.setFormatter(formatter)
 
-logger.addHandler(handler) # add the formatted HANDLER to the logger
+# Add the formatted HANDLER to the logger
+logger.addHandler(handler)
 
-#########################################################################################################################################
+########################################################################################################################################
 
 # COROUTINE WITH SEMAPHORE CONTROL
 # --------------------------------
 async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[str, str]:
+   
     """
-    (Internal async worker) Pings a single IP address under semaphore control.
-    It returns a tuple containing the IP address and its final status to ensure
-    results can be correctly mapped later, regardless of completion order.
+    PURPOSE
+    -------
+    Acts as a single, concurrent worker responsible for pinging one IP address. This
+    internal asynchronous function is designed to be run as part of a larger, managed
+    group of tasks. It uses a provided `Semaphore` to limit the number of simultaneous
+    ping operations, preventing system resource exhaustion. The function constructs and
+    executes the appropriate `ping` command for the host operating system, captures the
+    output, and parses it to determine if the device is "Online" or "Offline".
+
+    
+    ARGUMENTS
+    ---------
+    ip_address (str): The IP address of the target device to be pinged. semaphore (asyncio.Semaphore): 
+    An asyncio semaphore instance that is used to limit the number of concurrent executions of this worker.
+
+    
+    RETURN VALUE
+    ------------
+    Upon successful completion, it returns a tuple containing the original `ip_address` (str)
+    and its determined `status` (str), which will be either "Online" or "Offline".
+    If an exception occurs, an error is logged, and the function's execution is terminated
+    for that specific IP.
     """
+   
     try:
         # This 'async with' block ensures that no more than the semaphore's limit
         # of tasks can run this code block at the same time.
@@ -98,45 +123,46 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
 
 # RUN CHECK AND GENERATE UPDATES AND REPORTS
 # ------------------------------------------
-async def ping_printers_async(printers_dataframe, ip_address_column_name_str, progress_callback=None):
+async def ping_printers_async(printers_dataframe, progress_callback=None):
+
     """
-    PURPOSE:
-
-    This function runs the PING command for every printer's IP address, and based
-    on the output it determines if the printer is online or offline. This version
-    runs the pings concurrently for high speed, while preserving the original
-    progress counter logic.
-    
-
-    ARGUMENTS:
-
-    printers_dataframe = the name of the DataFrame containing all the printer information.
-
-    status_column_name_str = the name of the column with the status values.
-
-    hostname_column_name_str = the name of the column with the hostname values.
-
-    ip_address_column_name_str = the name of the column with the IP addresses.
+    PURPOSE
+    -------
+    Concurrently pings a list of printer IP addresses extracted from a DataFrame to
+    efficiently determine their online or offline status. This function is optimized for
+    speed by running multiple ping operations at the same time, while using a semaphore
+    to prevent overwhelming the network or system. It provides real-time progress
+    updates both to the console and through an optional callback function, making it
+    suitable for integration with a GUI.
 
     
-    RETURN VALUE:
+    ARGUMENTS
+    ---------
+    printers_dataframe (pd.DataFrame): The DataFrame containing all printer information, 
+    from which the IP addresses will be sourced.
+    
+    progress_callback (callable, optional): An optional function that is called after each ping completes. 
+    It should accept a single integer argument representing the overall progress percentage.
 
-    This function returns a dictionary mapping each IP Address to its final 'Online'
-    or 'Offline' status. It also prints a counter indicating the progress, exactly
-    like the original function.
+        
+    RETURN VALUE
+    ------------
+    Returns a dictionary that maps each IP address (str) to its final determined
+    status (str), which will be either 'Online' or 'Offline'. This structure allows the
+    calling function to safely update statuses without worrying about the asynchronous
+    completion order.
     """
-
 
     ### <=== LIMIT THE CONCURRENT PING PROCESSES ===>
     CONCURRENT_LIMIT = 50 # Sets a safe limit on how many pings run at once.
     semaphore = asyncio.Semaphore(CONCURRENT_LIMIT)
 
-    ip_list = printers_dataframe[ip_address_column_name_str].tolist()
+    ip_list = printers_dataframe['IP Address'].tolist()
 
 
     ### <=== UPDATE PROGRESS ===> ###
     # Get the total count of printers being checked by counting the total number of IP addresses
-    ip_address_count = printers_dataframe[ip_address_column_name_str].count()
+    ip_address_count = printers_dataframe['IP Address'].count()
 
     # Initialize the progress counter
     counter = 0
