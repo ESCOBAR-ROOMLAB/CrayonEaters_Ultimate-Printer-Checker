@@ -1,7 +1,8 @@
 # Ultimate Printer Status Checker
 
 The Ultimate Printer Status Checker is a desktop application designed to automate the process of verifying the network status of a large fleet of printers. It reads printer information from an Excel file, pings each device to determine if it's online, updates the Excel file with the latest status, and generates a clean, easy-to-read HTML report with data visualizations.
-
+<br>
+<br>
 
 ## Features
 
@@ -24,11 +25,14 @@ The Ultimate Printer Status Checker is a desktop application designed to automat
 <br>
 
 **Robust and Responsive**: The main work is performed in a background thread, ensuring the user interface never freezes, with real-time progress updates.
+<br>
+<br>
 
 
 ## How It Works
 
 The application works as follows:
+<br>
 <br>
 **1.**  The user enters the name of the Excel sheet containing the printer fleet data and clicks "I'm feeling complacient".
 <br>
@@ -55,26 +59,8 @@ The application works as follows:
 <br>
 <br>
 **9.**  Finally, the updated Excel file and the newly generated HTML report are automatically opened for the user.
-
-
-## Requirements
-
-The application is built with Python 3 and requires the following libraries:
-<br>
-*   `PyQt5`: For the graphical user interface.
 <br>
 <br>
-*   `pandas`: For data manipulation and reading the Excel file.
-<br>
-<br>
-*   `openpyxl`: For writing data back to the `.xlsx` file while preserving styles.
-<br>
-<br>
-*   `matplotlib`: For creating the pie and bar charts.
-<br>
-<br>
-*   `psutil`: To check if the Excel file is open and close it to prevent permission errors.
-<br>  
 
 
 ## Usage of the Application
