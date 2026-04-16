@@ -19,7 +19,8 @@ code_explanations/*
 
 
 # --- Images ---
-images/*
+images/printer_status_by_base_code_bar-chart.png
+images/printer_status_pie-chart.png
 
 
 # --- Python Cache ---
