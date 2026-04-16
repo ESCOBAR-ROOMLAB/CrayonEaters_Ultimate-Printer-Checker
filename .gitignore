@@ -30,3 +30,7 @@ __pycache__/*
 /build/
 *.spec
 
+# --- App Distribution Folder ---
+# Ignore the executable and README file contained on the folder used to distribute it
+CrayonEaters_Ultimate-Printer-Checker.zip
+
