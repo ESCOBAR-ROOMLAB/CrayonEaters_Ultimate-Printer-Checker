@@ -13,9 +13,6 @@ import printer_network_checks_async # type: ignore
 # This module allows us to run asynchronous tasks
 import asyncio
 
-# This module will provide us useful helper functions
-import common_helper_functions
-
 # This module allows us to log errors and execution output
 import logging
 
@@ -29,7 +26,7 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
-log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+log_file_path = 'execution_logs.log'
 
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
@@ -84,8 +81,13 @@ async def main(excel_sheet_name, progress_callback=None):
 
 
     ### <=== GET THE FILE PATHS ===> ###
-    excel_file = common_helper_functions.get_absolute_path('Printer_Fleet_Table.xlsx')
-    report_file = common_helper_functions.get_absolute_path('Printer_Report.html')
+    # Do not try to get an absolute path for this files. Thet will be present in the folder distributed to the users, and not meant to be moved.
+    # If we use the "common_helper_function" method to retrieve an absolute path, the HTML file will be created on the temporary folder that the
+    # Bootloader makes, while the EXCEL tracker will be either in the same temporary folder (if we add it as data, which we shouldn't) or in the 
+    # or unfindable, since it will be in the CWD folder but the method will detect we are running the app on a bundle and the base path will be the 
+    # temporary folder.
+    excel_file = 'Printer_Fleet_Table.xlsx'
+    report_file = 'Printer_Report.html'
     #-------------------------------------------------------------
     logger.info(f"Retrieving the EXCEL file path: '{excel_file}'")
     logger.info(f"Retrieving the HTML file path: '{report_file}'")

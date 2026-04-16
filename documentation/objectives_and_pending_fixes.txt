@@ -12,3 +12,7 @@ OBJECTIVES
 
 TO FIX
 ------
+ 
+* Compile it right:
+
+pyinstaller --onefile --windowed --add-data "images;images" --name "CrayonEaters_Ultimate-Printer-Checker" program_gui.py

@@ -14,9 +14,6 @@ import platform
 # or not by analyzing the text output of each PING subprocess.
 import re
 
-# This module will provide us useful helper functions
-import common_helper_functions
-
 # This module allows us to log errors and execution output
 import logging
 
@@ -30,7 +27,7 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
-log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+log_file_path = 'execution_logs.log'
 
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB

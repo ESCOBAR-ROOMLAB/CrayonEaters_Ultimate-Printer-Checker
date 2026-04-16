@@ -24,7 +24,7 @@ from logging.handlers import RotatingFileHandler
 logger = logging.getLogger(__name__) # use the module's name as the name in the logs
 logger.setLevel(logging.INFO) # set the logging level
 
-log_file_path = common_helper_functions.get_absolute_path('execution_logs.log')
+log_file_path = 'execution_logs.log'
 
 # Use RotatingFileHandler.
 # maxBytes: 5 * 1024 * 1024 = 5 MB
