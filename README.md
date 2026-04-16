@@ -28,37 +28,39 @@ The Ultimate Printer Status Checker is a desktop application designed to automat
 
 ## How It Works
 
-1.  The user enters the name of the Excel sheet containing the printer fleet data and clicks "I'm feeling complacient".
+The application works as follows:
+<br>
+**1.**  The user enters the name of the Excel sheet containing the printer fleet data and clicks "I'm feeling complacient".
 <br>
 <br>
-2.  The application reads the data from `Printer_Fleet_Table.xlsx` into a pandas DataFrame.
+**2.**  The application reads the data from `Printer_Fleet_Table.xlsx` into a pandas DataFrame.
 <br>
 <br>
-3.  It initiates an asynchronous process to ping the IP address of every printer in the list. A semaphore limits concurrent pings to prevent network overload.
+**3.**  It initiates an asynchronous process to ping the IP address of every printer in the list. A semaphore limits concurrent pings to prevent network overload.
 <br>
 <br>
-4.  The status of each printer ('Online' or 'Offline') is determined by analyzing the ping command's output with a regular expression.
+**4.**  The status of each printer ('Online' or 'Offline') is determined by analyzing the ping command's output with a regular expression.
 <br>
 <br>
-5.  The original DataFrame is updated with the new status.
+**5.**  The original DataFrame is updated with the new status.
 <br>
 <br>
-6.  Using `openpyxl`, the application carefully writes only the status data back into the original Excel file, leaving all other cells and formatting untouched.
+**6.**  Using `openpyxl`, the application carefully writes only the status data back into the original Excel file, leaving all other cells and formatting untouched.
 <br>
 <br>
-7.  `matplotlib` is used to generate a pie chart and a bar chart, which are saved as temporary image files.
+**7.**  `matplotlib` is used to generate a pie chart and a bar chart, which are saved as temporary image files.
 <br>
 <br>
-8.  The `printer_report_craft.py` module builds a single, portable `Printer_Report.html` file, embedding the chart images directly using base64.
+**8.**  The `printer_report_craft.py` module builds a single, portable `Printer_Report.html` file, embedding the chart images directly using base64.
 <br>
 <br>
-9.  Finally, the updated Excel file and the newly generated HTML report are automatically opened for the user.
+**9.**  Finally, the updated Excel file and the newly generated HTML report are automatically opened for the user.
 
 
 ## Requirements
 
 The application is built with Python 3 and requires the following libraries:
-
+<br>
 *   `PyQt5`: For the graphical user interface.
 <br>
 <br>
@@ -72,42 +74,18 @@ The application is built with Python 3 and requires the following libraries:
 <br>
 <br>
 *   `psutil`: To check if the Excel file is open and close it to prevent permission errors.
-<br>
+<br>  
 
 
-## Setup
-
-1.  **Clone the Repository (or download the files):**
-    ```bash
-    git clone [your-repository-url]
-    cd [your-repository-folder]
-    ```
-    <br>
-
-2.  **Create a Virtual Environment (Recommended):**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
-    <br>
-
-3.  **Install Dependencies:**
-    You can install the required packages using pip.
-    ```bash
-    pip install PyQt5 pandas openpyxl matplotlib psutil
-    ```
-    
-
-
-## Usage
+## Usage of the Application
 
 1.  **Prepare the Excel File:**
     *   Ensure you have a file named `Printer_Fleet_Table.xlsx` in the same directory as the application.
     *   This file must contain a sheet with a name you can provide to the application (e.g., `MRF-D`).
-    *   The sheet must contain at least the following columns: `IP Address`, `Status`, and `Site`. The application will read IPs and Sites, and update 	the Status.
+    *   The sheet must contain at least the following columns: `IP Address`, `Status`, and `Site`. The application will read IPs and Sites, and update the Status.
 
 2.  **Run the Application:**
-TO BE WRITTEN WHEN FINISH PYINSTALLER
+    *   Execute the .exe file and run the program over an existent table from a sheet in the EXCEL document.
 
 3.  **Use the Interface:**
     *   The application window will appear.
