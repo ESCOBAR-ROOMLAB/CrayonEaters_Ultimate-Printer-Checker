@@ -205,7 +205,7 @@ def generate_printer_pie_chart(printers_dataframe, status_column_value):
             # Create and return the final formatted string to be displayed on the slice.
             # It includes the absolute number and the percentage on a new line.
             # For example: "15\n(75.0%)"
-            return f'{val}\\n({pct:.1f}%)'
+            return f'{val}\n({pct:.1f}%)'
 
         # The outer function returns the inner function itself.
         # This returned function is now "primed" and ready for Matplotlib to use.

@@ -1,5 +1,11 @@
 # Used for running network operations concurrently (asynchronously) to speed up the process.
-import asyncio  
+import asyncio 
+
+# This module allows Python to create and interact with additional operating system processes, such as running command-line tools like 'ping'.
+# While asyncio handles the asynchronous execution of these processes, we import this module specifically to access the 'subprocess.CREATE_NO_WINDOW' 
+# constant. This is a special flag, used only on the Windows operating system, which is passed to the process creation call to prevent a new console window 
+# from flashing open for each 'ping' command, ensuring a much cleaner and less distracting user experience.
+import subprocess
 
 # Used to check the operating system (e.g., Windows, Linux) to use the correct ping command syntax.
 import platform 
@@ -83,12 +89,21 @@ async def _ping_worker(ip_address: str, semaphore: asyncio.Semaphore) -> tuple[s
             command = ['ping', param, '4', ip_address]
 
 
+            ### <=== CREATION FLAG ARGUMENT FOR WINDOWS ===> ###
+            # Define a variable to hold the special Windows flag.
+            # This flag tells Windows to not create a console window for the subprocess.
+            creation_flags = 0
+            if platform.system() == "Windows":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+
+
             ### <=== CREATE AN ASYNCHRONOUS SUBPROCESS ===> ###
             # Creates an asynchronous subprocess to run the ping command.
             process = await asyncio.create_subprocess_exec(
                 *command,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                creationflags=creation_flags
             )
 
             # Reads the output from the completed process.
