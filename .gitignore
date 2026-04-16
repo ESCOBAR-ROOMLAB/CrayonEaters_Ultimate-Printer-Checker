@@ -7,6 +7,9 @@ documentation/where_did_i_left.txt
 documentation/suggested_improvements.txt
 documentation/objectives_and_pending_fixes.txt
 
+# --- The EXCEL tracker ---
+# This file is dynamically updated, it should not be version-controlled.
+Printer_Fleet_Table.xlsx
 
 # --- The logging file ---
 execution_logs.log
