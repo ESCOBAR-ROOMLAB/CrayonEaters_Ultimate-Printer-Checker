@@ -265,7 +265,7 @@ def close_excel_file_if_open(excel_file):
         
 
 # OPEN THE EXCEL FILE FILE
---------------------------
+#--------------------------
 def open_output_files(excel_file):
     
     """
