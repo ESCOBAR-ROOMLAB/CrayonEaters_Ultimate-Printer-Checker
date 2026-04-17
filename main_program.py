@@ -175,4 +175,4 @@ async def main(excel_sheet_name, progress_callback=None):
     printer_report_craft.generate_printer_report_in_html(report_file, excel_sheet_name, all_printers_df, pie_chart_file_name, bar_chart_file_name)
     
     # Now we can open it
-    printers_data_ops.open_output_files(excel_file, report_file)
+    printers_data_ops.open_output_files(excel_file)

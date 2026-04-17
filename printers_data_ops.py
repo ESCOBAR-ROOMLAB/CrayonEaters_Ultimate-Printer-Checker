@@ -10,9 +10,6 @@ import psutil # type: ignore
 # Used to get the filename from a full path
 import os
 
-# Provides a way to open files in a web browser.
-import webbrowser 
-
 # This module allows us to log errors and execution output
 import logging
 
@@ -267,25 +264,21 @@ def close_excel_file_if_open(excel_file):
         #----------------------------------------------------------
         
 
-# OPEN THE EXCEL AND REPORT FILES
-# -------------------------------
-def open_output_files(excel_file, report_file):
+# OPEN THE EXCEL FILE FILE
+--------------------------
+def open_output_files(excel_file):
     
     """
     PURPOSE
     -------
     This function automatically opens the two final output files for immediate
-    user review. It opens the generated HTML report in the default web browser
-    and the updated Excel workbook in its default application (e.g., Microsoft
+    user review. It opens the updated Excel workbook in its default application (e.g., Microsoft
     Excel). It is designed to work on the Windows operating system.
 
     
     ARGUMENTS
     ---------
     excel_file  = The file path of the Excel workbook that was updated.
-    It should be a string.
-    
-    report_file = The file path of the HTML report that was generated.
     It should be a string.
 
     
@@ -296,27 +289,24 @@ def open_output_files(excel_file, report_file):
     to the console indicating its actions or any errors encountered.
     """
 
-    #-----------------------------------------------------------------------------
-    logger.info("Opening the generated HTML report and the updated Excel file...")
-    #-----------------------------------------------------------------------------
+    #-----------------------------------------------
+    logger.info("Opening the updated Excel file...")
+    #-----------------------------------------------
     
-    try:
-        # Open the HTML report in a new tab in the default web browser.
-        webbrowser.open_new_tab('file://' + report_file)
-        
+    try: 
         # Open the Excel file using the default application.
         # os.startfile() is a Windows-specific command.
         os.startfile(excel_file)
 
-        #-------------------------------------------------
-        logger.info("Files have been opened successfully")
-        #-------------------------------------------------
+        #------------------------------------------------
+        logger.info("File have been opened successfully")
+        #------------------------------------------------
         
     except FileNotFoundError as e:
         #-----------------------------------------------------------------------------------------------------
         logger.error(f"Opening the file failed: Could not open a file because it was not found: {e.filename}")
         #-----------------------------------------------------------------------------------------------------
     except Exception as e:
-        #-------------------------------------------------------------------------
-        print(f"An unexpected error occurred while trying to open the files: {e}")
-        #-------------------------------------------------------------------------
+        #------------------------------------------------------------------------
+        print(f"An unexpected error occurred while trying to open the file: {e}")
+        #------------------------------------------------------------------------
